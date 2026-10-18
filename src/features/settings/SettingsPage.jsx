@@ -1,37 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
-import { seedSampleKanpurCustomers } from '../../services/customerService';
 import {
   Settings,
   Store,
   ShieldCheck,
   Database,
-  Sparkles,
   CheckCircle,
-  HelpCircle,
+  FileSpreadsheet,
+  Users,
   MapPin,
   Phone,
   Mail,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export function SettingsPage() {
+  const navigate = useNavigate();
   const { user, userProfile, isAdmin } = useAuth();
-  const [seedingLoading, setSeedingLoading] = useState(false);
-
-  const handleSeed = async () => {
-    setSeedingLoading(true);
-    try {
-      await seedSampleKanpurCustomers(user);
-      toast.success('Successfully added sample Kanpur customers and follow-ups!');
-    } catch (err) {
-      toast.error('Failed to seed sample data: ' + err.message);
-    } finally {
-      setSeedingLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -150,29 +137,37 @@ export function SettingsPage() {
           </div>
         </Card>
 
-        {/* Sample Data Seeder */}
-        <Card className="border-2 border-border p-5 space-y-3 bg-sticky-yellow/30">
+        {/* Database Management & Quick Actions */}
+        <Card className="border-2 border-border p-5 space-y-3 bg-paper-white" tape={true}>
           <div className="flex items-center gap-2 border-b-2 border-dashed border-border/40 pb-2">
-            <Sparkles className="w-5 h-5 text-warning" />
+            <Database className="w-5 h-5 text-secondary-accent" />
             <h3 className="text-xl font-heading font-bold text-foreground">
-              Demo Sample Data Generator
+              Lead Management Actions
             </h3>
           </div>
 
           <p className="text-xs font-body text-foreground/80 leading-relaxed">
-            Need realistic testing data for testing follow-ups, hot/warm/cold classifications, overdue queues, and calling history?
-            Click below to populate realistic Kanpur computer shop customers (ThinkPad, Gaming PC, Upgrades).
+            Real-time synchronization is active with your Google Cloud Firestore database (`galaxycrm-4577f`). Manage leads and records directly.
           </p>
 
-          <Button
-            variant="primary"
-            icon={Sparkles}
-            onClick={handleSeed}
-            disabled={seedingLoading}
-            className="w-full"
-          >
-            {seedingLoading ? 'Generating Sample Leads in Firestore...' : 'Populate Sample Kanpur Leads'}
-          </Button>
+          <div className="flex flex-col gap-2 pt-1">
+            <Button
+              variant="primary"
+              icon={Users}
+              onClick={() => navigate('/leads')}
+              className="w-full justify-center"
+            >
+              Open Master Customer Database
+            </Button>
+            <Button
+              variant="outline"
+              icon={FileSpreadsheet}
+              onClick={() => navigate('/import-export')}
+              className="w-full justify-center"
+            >
+              Bulk Import / Export CSV Leads
+            </Button>
+          </div>
         </Card>
       </div>
     </div>

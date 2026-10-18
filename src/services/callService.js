@@ -1,24 +1,14 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
-  orderBy,
   limit,
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { logAudit } from './auditService';
-import {
-  isFirestoreDisabledError,
-  isStandbyMode,
-  setStandbyMode,
-  getLocalCollection,
-  addLocalDocument,
-  updateLocalDocument,
-} from './storageAdapter';
 
 const CALL_LOGS_COLLECTION = 'callLogs';
 
@@ -42,6 +32,9 @@ export async function logCall({
     throw new Error('Customer ID is required to log call');
   }
 
+  const batch = writeBatch(db);
+  const callLogRef = doc(collection(db, CALL_LOGS_COLLECTION));
+
   const callRecord = {
     customerId,
     customerCustomId,
@@ -62,113 +55,78 @@ export async function logCall({
     createdAt: serverTimestamp(),
   };
 
-  try {
-    const batch = writeBatch(db);
-    const callLogRef = doc(collection(db, CALL_LOGS_COLLECTION));
-    batch.set(callLogRef, callRecord);
+  batch.set(callLogRef, callRecord);
 
-    const customerRef = doc(db, 'customers', customerId);
-    let newStatus = 'Contacted';
-    if (doNotContact) newStatus = 'Do Not Contact';
-    else if (callOutcome === 'Converted / Sale Completed') newStatus = 'Converted';
-    else if (nextFollowUpDate) newStatus = 'Follow-up';
+  const customerRef = doc(db, 'customers', customerId);
+  let newStatus = 'Contacted';
+  if (doNotContact) newStatus = 'Do Not Contact';
+  else if (callOutcome === 'Converted / Sale Completed') newStatus = 'Converted';
+  else if (nextFollowUpDate) newStatus = 'Follow-up';
 
-    batch.update(customerRef, {
-      lastCallAt: serverTimestamp(),
-      lastCallOutcome: callOutcome,
+  batch.update(customerRef, {
+    lastCallAt: serverTimestamp(),
+    lastCallOutcome: callOutcome,
+    leadCategory: newLeadCategory,
+    leadStatus: newStatus,
+    latestFeedback: feedback.trim() || `Call outcome: ${callOutcome}`,
+    nextFollowUpDate: newStatus === 'Do Not Contact' ? null : nextFollowUpDate,
+    updatedAt: serverTimestamp(),
+  });
+
+  if (nextFollowUpDate && newStatus !== 'Do Not Contact') {
+    const followUpRef = doc(collection(db, 'followUps'));
+    batch.set(followUpRef, {
+      customerId,
+      customerCustomId,
+      customerNameSnapshot: customerName,
+      customerPhoneSnapshot: customerPhone,
       leadCategory: newLeadCategory,
-      leadStatus: newStatus,
-      latestFeedback: feedback.trim() || `Call outcome: ${callOutcome}`,
-      nextFollowUpDate: newStatus === 'Do Not Contact' ? null : nextFollowUpDate,
+      purpose: nextAction || `Follow-up: ${callOutcome}`,
+      dueDate: nextFollowUpDate,
+      status: 'Pending',
+      assignedTo: user?.email || 'Unassigned',
+      relatedCallId: callLogRef.id,
+      createdBy: user?.email || 'System',
+      createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      rescheduleHistory: [],
     });
-
-    if (nextFollowUpDate && newStatus !== 'Do Not Contact') {
-      const followUpRef = doc(collection(db, 'followUps'));
-      batch.set(followUpRef, {
-        customerId,
-        customerCustomId,
-        customerNameSnapshot: customerName,
-        customerPhoneSnapshot: customerPhone,
-        leadCategory: newLeadCategory,
-        purpose: nextAction || `Follow-up: ${callOutcome}`,
-        dueDate: nextFollowUpDate,
-        status: 'Pending',
-        assignedTo: user?.email || 'Unassigned',
-        relatedCallId: callLogRef.id,
-        createdBy: user?.email || 'System',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        rescheduleHistory: [],
-      });
-    }
-
-    await batch.commit();
-    return { id: callLogRef.id, ...callRecord };
-  } catch (error) {
-    if (isFirestoreDisabledError(error) || isStandbyMode()) {
-      setStandbyMode(true);
-      const savedCall = addLocalDocument('callLogs', callRecord);
-
-      let newStatus = 'Contacted';
-      if (doNotContact) newStatus = 'Do Not Contact';
-      else if (callOutcome === 'Converted / Sale Completed') newStatus = 'Converted';
-      else if (nextFollowUpDate) newStatus = 'Follow-up';
-
-      updateLocalDocument('customers', customerId, {
-        lastCallAt: { seconds: Math.floor(Date.now() / 1000) },
-        lastCallOutcome: callOutcome,
-        leadCategory: newLeadCategory,
-        leadStatus: newStatus,
-        latestFeedback: feedback.trim() || `Call outcome: ${callOutcome}`,
-        nextFollowUpDate: newStatus === 'Do Not Contact' ? null : nextFollowUpDate,
-      });
-
-      if (nextFollowUpDate && newStatus !== 'Do Not Contact') {
-        addLocalDocument('followUps', {
-          customerId,
-          customerCustomId,
-          customerNameSnapshot: customerName,
-          customerPhoneSnapshot: customerPhone,
-          leadCategory: newLeadCategory,
-          purpose: nextAction || `Follow-up: ${callOutcome}`,
-          dueDate: nextFollowUpDate,
-          status: 'Pending',
-          assignedTo: user?.email || 'Unassigned',
-          relatedCallId: savedCall.id,
-          createdBy: user?.email || 'System',
-          rescheduleHistory: [],
-        });
-      }
-
-      return savedCall;
-    }
-    throw error;
   }
+
+  await batch.commit();
+
+  await logAudit({
+    action: 'LOG_CALL',
+    targetType: 'callLog',
+    targetId: callLogRef.id,
+    targetName: customerName,
+    details: { callOutcome, newCategory: newLeadCategory },
+    user,
+  });
+
+  return { id: callLogRef.id, ...callRecord };
 }
 
 export async function getCallLogsByCustomer(customerId) {
   if (!customerId) return [];
   try {
-    const snap = await getDocs(query(collection(db, CALL_LOGS_COLLECTION), limit(100)));
+    const snap = await getDocs(query(collection(db, CALL_LOGS_COLLECTION), limit(200)));
     const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     const filtered = all.filter(l => l.customerId === customerId);
-    if (filtered.length > 0) return filtered;
+    return filtered.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   } catch (e) {
-    // Fallback to local
+    console.error('Error fetching call logs:', e);
+    return [];
   }
-  const local = getLocalCollection('callLogs');
-  return local.filter(l => l.customerId === customerId);
 }
 
 export async function getRecentCallLogs(limitCount = 10) {
   try {
     const snap = await getDocs(query(collection(db, CALL_LOGS_COLLECTION), limit(limitCount)));
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (list.length > 0) return list;
+    return list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
   } catch (e) {
-    // Fallback to local
+    console.error('Error fetching recent call logs:', e);
+    return [];
   }
-  const local = getLocalCollection('callLogs');
-  return local.slice(0, limitCount);
 }

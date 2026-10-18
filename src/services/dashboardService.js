@@ -1,18 +1,7 @@
-import {
-  collection,
-  getDocs,
-  limit,
-} from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { getKolkataTodayString, isOverdueDate } from '../utils/dates';
-import {
-  getLocalCollection,
-  isStandbyMode,
-  setStandbyMode,
-} from './storageAdapter';
-import { getTodayFollowUps, getOverdueFollowUps, getCompletedFollowUps } from './followUpService';
 import { getCustomers } from './customerService';
+import { getTodayFollowUps, getOverdueFollowUps, getCompletedFollowUps } from './followUpService';
 import { getRecentCallLogs } from './callService';
+import { getKolkataTodayString } from '../utils/dates';
 
 export async function getDashboardMetrics() {
   const todayStr = getKolkataTodayString();

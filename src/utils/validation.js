@@ -1,6 +1,5 @@
 import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { isStandbyMode, getLocalCollection, withTimeout } from '../services/storageAdapter';
 
 /**
  * Normalizes phone numbers for duplicate checks and storage.
@@ -33,19 +32,12 @@ export function formatPhoneNumber(phone) {
 
 /**
  * Safely generates sequential or collision-free customer IDs (e.g. GC-10001)
- * Never blocks or hangs if Firestore is disabled.
  */
 export async function generateCustomerId() {
-  if (isStandbyMode()) {
-    const local = getLocalCollection('customers');
-    const nextNumber = 10001 + local.length;
-    return `GC-${nextNumber}`;
-  }
-
   const counterRef = doc(db, 'counters', 'customers');
 
   try {
-    const transactionPromise = runTransaction(db, async (transaction) => {
+    const nextId = await runTransaction(db, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
       let nextNumber = 10001;
 
@@ -60,12 +52,11 @@ export async function generateCustomerId() {
       return `GC-${nextNumber}`;
     });
 
-    return await withTimeout(transactionPromise, 1000);
+    return nextId;
   } catch (error) {
-    // Immediate fallback without waiting
-    const local = getLocalCollection('customers');
-    const suffix = Math.floor(1000 + Math.random() * 9000);
-    return `GC-${10001 + local.length || suffix}`;
+    console.warn('Counter transaction failed, generating time-based customer ID:', error);
+    const suffix = Math.floor(10000 + Math.random() * 90000);
+    return `GC-${suffix}`;
   }
 }
 

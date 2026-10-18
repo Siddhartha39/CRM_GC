@@ -9,7 +9,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { CallModal } from '../calls/CallModal';
 import { EditCustomerModal } from './EditCustomerModal';
-import { getCustomers, deleteCustomer, seedSampleKanpurCustomers } from '../../services/customerService';
+import { getCustomers, deleteCustomer } from '../../services/customerService';
 import { formatKolkataDate, formatINR } from '../../utils/dates';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -21,7 +21,6 @@ import {
   Eye,
   Edit,
   Trash2,
-  Sparkles,
   ArrowUpDown,
   Download,
   FileSpreadsheet,
@@ -46,7 +45,6 @@ export function AllLeadsPage({ forcedCategory = null }) {
   const [callingCustomer, setCallingCustomer] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [deletingCustomer, setDeletingCustomer] = useState(null);
-  const [seedingLoading, setSeedingLoading] = useState(false);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -129,19 +127,6 @@ export function AllLeadsPage({ forcedCategory = null }) {
     }
   };
 
-  const handleSeedData = async () => {
-    setSeedingLoading(true);
-    try {
-      await seedSampleKanpurCustomers(user);
-      toast.success('Kanpur computer shop sample leads loaded successfully!');
-      fetchLeads();
-    } catch (err) {
-      toast.error('Seeding error: ' + err.message);
-    } finally {
-      setSeedingLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-5">
       {/* Page Header Bar */}
@@ -156,17 +141,6 @@ export function AllLeadsPage({ forcedCategory = null }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {customers.length === 0 && !loading && (
-            <Button
-              variant="sticky"
-              size="sm"
-              icon={Sparkles}
-              onClick={handleSeedData}
-              disabled={seedingLoading}
-            >
-              {seedingLoading ? 'Seeding...' : 'Load Sample Kanpur Leads'}
-            </Button>
-          )}
           <Button
             variant="muted"
             size="sm"
