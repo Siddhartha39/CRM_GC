@@ -10,7 +10,6 @@ import {
   where,
   orderBy,
   limit,
-  startAfter,
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
@@ -18,6 +17,15 @@ import { db } from '../lib/firebase';
 import { normalizePhoneNumber, generateCustomerId } from '../utils/validation';
 import { logAudit } from './auditService';
 import { getKolkataTodayString } from '../utils/dates';
+import {
+  isFirestoreDisabledError,
+  isStandbyMode,
+  setStandbyMode,
+  getLocalCollection,
+  addLocalDocument,
+  updateLocalDocument,
+  deleteLocalDocument,
+} from './storageAdapter';
 
 const CUSTOMERS_COLLECTION = 'customers';
 
@@ -41,8 +49,10 @@ export async function checkDuplicatePhone(phone, excludeDocId = null) {
 
     return duplicates.length > 0 ? duplicates[0] : null;
   } catch (error) {
-    console.error('Error checking duplicate phone:', error);
-    return null;
+    // Check local fallback
+    const local = getLocalCollection('customers');
+    const match = local.find(c => c.id !== excludeDocId && c.normalizedPhone === norm);
+    return match || null;
   }
 }
 
@@ -55,7 +65,14 @@ export async function createCustomer(data, user) {
   const normWhatsApp = data.whatsAppNumber ? normalizePhoneNumber(data.whatsAppNumber) : (normPhone || '');
 
   // Generate unique customer ID
-  const customerId = data.customerId || await generateCustomerId();
+  let customerId = data.customerId;
+  if (!customerId) {
+    try {
+      customerId = await generateCustomerId();
+    } catch (e) {
+      customerId = `GC-${10000 + Math.floor(Math.random() * 9000)}`;
+    }
+  }
 
   const customerDocRef = doc(collection(db, CUSTOMERS_COLLECTION));
 
@@ -74,8 +91,8 @@ export async function createCustomer(data, user) {
     interest: data.interest || 'Laptops',
     requirement: data.requirement?.trim() || '',
     budget: data.budget ? Number(data.budget) : null,
-    leadCategory: data.leadCategory || 'Cold', // Hot, Warm, Cold
-    leadStatus: data.leadStatus || 'New',     // New, Contacted, Follow-up, Converted, Lost, Do Not Contact
+    leadCategory: data.leadCategory || 'Cold',
+    leadStatus: data.leadStatus || 'New',
     assignedTo: data.assignedTo || user?.email || 'Unassigned',
     assignedToName: data.assignedToName || user?.displayName || 'Unassigned',
     lastCallAt: null,
@@ -89,56 +106,76 @@ export async function createCustomer(data, user) {
     updatedAt: serverTimestamp(),
   };
 
-  await setDoc(customerDocRef, customerRecord);
+  try {
+    await setDoc(customerDocRef, customerRecord);
 
-  // If initial nextFollowUpDate was scheduled, create follow-up document
-  if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
-    try {
-      const followUpRef = doc(collection(db, 'followUps'));
-      await setDoc(followUpRef, {
-        customerId: customerDocRef.id,
-        customerCustomId: customerId,
-        customerNameSnapshot: customerRecord.fullName,
-        customerPhoneSnapshot: customerRecord.phone,
-        leadCategory: customerRecord.leadCategory,
-        requirement: customerRecord.requirement,
-        purpose: 'Initial Follow-up after registration',
-        dueDate: data.nextFollowUpDate,
-        status: 'Pending',
-        assignedTo: customerRecord.assignedTo,
-        createdBy: user?.email || 'System',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        rescheduleHistory: [],
-      });
-    } catch (e) {
-      console.warn('Could not create initial followUp doc:', e);
+    if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
+      try {
+        const followUpRef = doc(collection(db, 'followUps'));
+        await setDoc(followUpRef, {
+          customerId: customerDocRef.id,
+          customerCustomId: customerId,
+          customerNameSnapshot: customerRecord.fullName,
+          customerPhoneSnapshot: customerRecord.phone,
+          leadCategory: customerRecord.leadCategory,
+          requirement: customerRecord.requirement,
+          purpose: 'Initial Follow-up after registration',
+          dueDate: data.nextFollowUpDate,
+          status: 'Pending',
+          assignedTo: customerRecord.assignedTo,
+          createdBy: user?.email || 'System',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          rescheduleHistory: [],
+        });
+      } catch (e) {
+        console.warn('Initial follow-up doc creation skipped:', e);
+      }
     }
+
+    await logAudit({
+      action: 'CREATE_CUSTOMER',
+      targetType: 'customer',
+      targetId: customerDocRef.id,
+      targetName: customerRecord.fullName,
+      details: { customerId, phone: customerRecord.phone, leadCategory: customerRecord.leadCategory },
+      user,
+    });
+
+    return { id: customerDocRef.id, ...customerRecord };
+  } catch (error) {
+    if (isFirestoreDisabledError(error)) {
+      console.warn('Firestore is disabled in Firebase Console. Using local standby storage:', error);
+      setStandbyMode(true);
+      const saved = addLocalDocument('customers', { id: customerDocRef.id, ...customerRecord });
+
+      if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
+        addLocalDocument('followUps', {
+          customerId: saved.id,
+          customerCustomId: customerId,
+          customerNameSnapshot: customerRecord.fullName,
+          customerPhoneSnapshot: customerRecord.phone,
+          leadCategory: customerRecord.leadCategory,
+          requirement: customerRecord.requirement,
+          purpose: 'Initial Follow-up after registration',
+          dueDate: data.nextFollowUpDate,
+          status: 'Pending',
+          assignedTo: customerRecord.assignedTo,
+          createdBy: user?.email || 'System',
+          rescheduleHistory: [],
+        });
+      }
+
+      return saved;
+    }
+    throw error;
   }
-
-  // Audit
-  await logAudit({
-    action: 'CREATE_CUSTOMER',
-    targetType: 'customer',
-    targetId: customerDocRef.id,
-    targetName: customerRecord.fullName,
-    details: { customerId, phone: customerRecord.phone, leadCategory: customerRecord.leadCategory },
-    user,
-  });
-
-  return { id: customerDocRef.id, ...customerRecord };
 }
 
 /**
  * Update an existing customer without overwriting call history
  */
 export async function updateCustomer(docId, updates, user) {
-  const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
-  const currentSnap = await getDoc(customerRef);
-  if (!currentSnap.exists()) {
-    throw new Error('Customer not found');
-  }
-
   const cleanUpdates = { ...updates };
   if (cleanUpdates.phone) {
     cleanUpdates.normalizedPhone = normalizePhoneNumber(cleanUpdates.phone);
@@ -150,57 +187,75 @@ export async function updateCustomer(docId, updates, user) {
     cleanUpdates.budget = Number(cleanUpdates.budget);
   }
 
-  // Protect system fields from being overwritten
   delete cleanUpdates.id;
   delete cleanUpdates.createdAt;
   delete cleanUpdates.createdBy;
   cleanUpdates.updatedAt = serverTimestamp();
   cleanUpdates.updatedBy = user?.email || 'System';
 
-  await updateDoc(customerRef, cleanUpdates);
+  try {
+    const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
+    await updateDoc(customerRef, cleanUpdates);
 
-  await logAudit({
-    action: 'UPDATE_CUSTOMER',
-    targetType: 'customer',
-    targetId: docId,
-    targetName: updates.fullName || currentSnap.data().fullName,
-    details: { updatedFields: Object.keys(cleanUpdates) },
-    user,
-  });
+    await logAudit({
+      action: 'UPDATE_CUSTOMER',
+      targetType: 'customer',
+      targetId: docId,
+      targetName: updates.fullName || 'Customer',
+      details: { updatedFields: Object.keys(cleanUpdates) },
+      user,
+    });
 
-  return { id: docId, ...currentSnap.data(), ...cleanUpdates };
+    return { id: docId, ...cleanUpdates };
+  } catch (error) {
+    if (isFirestoreDisabledError(error) || isStandbyMode()) {
+      return updateLocalDocument('customers', docId, cleanUpdates);
+    }
+    throw error;
+  }
 }
 
 /**
  * Delete a customer record (Admin only)
  */
 export async function deleteCustomer(docId, user) {
-  const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
-  const currentSnap = await getDoc(customerRef);
-  const name = currentSnap.exists() ? currentSnap.data().fullName : docId;
+  try {
+    const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
+    await deleteDoc(customerRef);
 
-  await deleteDoc(customerRef);
+    await logAudit({
+      action: 'DELETE_CUSTOMER',
+      targetType: 'customer',
+      targetId: docId,
+      user,
+    });
 
-  await logAudit({
-    action: 'DELETE_CUSTOMER',
-    targetType: 'customer',
-    targetId: docId,
-    targetName: name,
-    details: { deletedAt: new Date().toISOString() },
-    user,
-  });
-
-  return true;
+    return true;
+  } catch (error) {
+    if (isFirestoreDisabledError(error) || isStandbyMode()) {
+      return deleteLocalDocument('customers', docId);
+    }
+    throw error;
+  }
 }
 
 /**
  * Get single customer document by ID
  */
 export async function getCustomerById(docId) {
-  const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
-  const snap = await getDoc(customerRef);
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() };
+  try {
+    const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
+    const snap = await getDoc(customerRef);
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() };
+    }
+  } catch (error) {
+    // Check local fallback
+  }
+
+  const local = getLocalCollection('customers');
+  const found = local.find(c => c.id === docId);
+  return found || null;
 }
 
 /**
@@ -211,7 +266,7 @@ export async function getCustomers({
   status = null,
   assignedTo = null,
   search = '',
-  limitCount = 50,
+  limitCount = 100,
 } = {}) {
   try {
     let q = collection(db, CUSTOMERS_COLLECTION);
@@ -223,59 +278,56 @@ export async function getCustomers({
     if (status && status !== 'All') {
       conditions.push(where('leadStatus', '==', status));
     }
-    if (assignedTo && assignedTo !== 'All') {
-      conditions.push(where('assignedTo', '==', assignedTo));
-    }
 
-    // Apply conditions
-    const firestoreQuery = query(q, ...conditions, orderBy('createdAt', 'desc'), limit(limitCount));
+    const firestoreQuery = query(q, ...conditions, limit(limitCount));
     const snap = await getDocs(firestoreQuery);
 
     let results = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Client-side search for flexible matching (name, phone, customerId, requirement)
-    if (search && search.trim()) {
-      const term = search.trim().toLowerCase();
-      const normTerm = normalizePhoneNumber(term);
+    // Merge with any local documents created during standby
+    const local = getLocalCollection('customers');
+    const existingIds = new Set(results.map(r => r.id));
+    local.forEach(l => {
+      if (!existingIds.has(l.id)) {
+        results.push(l);
+      }
+    });
 
-      results = results.filter(cust => {
-        const nameMatch = cust.fullName?.toLowerCase().includes(term);
-        const idMatch = cust.customerId?.toLowerCase().includes(term);
-        const reqMatch = cust.requirement?.toLowerCase().includes(term);
-        const phoneMatch = cust.phone?.includes(term) || (normTerm && cust.normalizedPhone?.includes(normTerm));
-        const emailMatch = cust.email?.toLowerCase().includes(term);
-        return nameMatch || idMatch || reqMatch || phoneMatch || emailMatch;
-      });
-    }
-
-    return results;
+    // Client-side filtering and search
+    return filterAndSearchCustomers(results, { category, status, search });
   } catch (error) {
-    console.error('Error fetching customers:', error);
-    // If composite index is missing or building, fallback to basic query without order
-    try {
-      const fallbackSnap = await getDocs(query(collection(db, CUSTOMERS_COLLECTION), limit(limitCount)));
-      let results = fallbackSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (category && category !== 'All') {
-        results = results.filter(c => c.leadCategory === category);
-      }
-      if (status && status !== 'All') {
-        results = results.filter(c => c.leadStatus === status);
-      }
-      if (search && search.trim()) {
-        const term = search.trim().toLowerCase();
-        results = results.filter(cust =>
-          cust.fullName?.toLowerCase().includes(term) ||
-          cust.customerId?.toLowerCase().includes(term) ||
-          cust.requirement?.toLowerCase().includes(term) ||
-          cust.phone?.includes(term)
-        );
-      }
-      return results;
-    } catch (fbErr) {
-      console.error('Fallback query error:', fbErr);
-      return [];
-    }
+    // Fallback to local collection if Firestore is disabled
+    setStandbyMode(true);
+    const local = getLocalCollection('customers');
+    return filterAndSearchCustomers(local, { category, status, search });
   }
+}
+
+function filterAndSearchCustomers(list, { category, status, search }) {
+  let results = [...list];
+
+  if (category && category !== 'All') {
+    results = results.filter(c => c.leadCategory === category);
+  }
+  if (status && status !== 'All') {
+    results = results.filter(c => c.leadStatus === status);
+  }
+
+  if (search && search.trim()) {
+    const term = search.trim().toLowerCase();
+    const normTerm = normalizePhoneNumber(term);
+
+    results = results.filter(cust => {
+      const nameMatch = cust.fullName?.toLowerCase().includes(term);
+      const idMatch = cust.customerId?.toLowerCase().includes(term);
+      const reqMatch = cust.requirement?.toLowerCase().includes(term);
+      const phoneMatch = cust.phone?.includes(term) || (normTerm && cust.normalizedPhone?.includes(normTerm));
+      const emailMatch = cust.email?.toLowerCase().includes(term);
+      return nameMatch || idMatch || reqMatch || phoneMatch || emailMatch;
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -289,82 +341,16 @@ export async function bulkImportCustomers(rows, user) {
     errors: [],
   };
 
-  const batch = writeBatch(db);
-  let batchCount = 0;
-
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const rowNum = i + 1;
-
-    if (!row.fullName || !row.phone) {
-      results.errors.push({ row: rowNum, error: 'Missing Customer Name or Phone Number' });
+    try {
+      await createCustomer(row, user);
+      results.success++;
+    } catch (e) {
+      results.errors.push({ row: i + 1, error: e.message });
       results.skipped++;
-      continue;
-    }
-
-    const normPhone = normalizePhoneNumber(row.phone);
-    if (!normPhone || normPhone.length !== 10) {
-      results.errors.push({ row: rowNum, error: `Invalid phone format: ${row.phone}` });
-      results.skipped++;
-      continue;
-    }
-
-    const newDocRef = doc(collection(db, CUSTOMERS_COLLECTION));
-    const customerId = row.customerId || `GC-${10000 + i + Math.floor(Math.random() * 900)}`;
-
-    const newCustomer = {
-      customerId,
-      fullName: row.fullName.trim(),
-      phone: row.phone.trim(),
-      normalizedPhone: normPhone,
-      alternatePhone: row.alternatePhone ? row.alternatePhone.trim() : '',
-      normalizedAltPhone: row.alternatePhone ? normalizePhoneNumber(row.alternatePhone) : '',
-      whatsAppNumber: row.whatsAppNumber ? row.whatsAppNumber.trim() : normPhone,
-      email: row.email ? row.email.trim() : '',
-      city: row.city ? row.city.trim() : 'Kanpur',
-      address: row.address ? row.address.trim() : '',
-      source: row.source || 'CSV Import',
-      interest: row.interest || 'Computer & Laptops',
-      requirement: row.requirement ? row.requirement.trim() : '',
-      budget: row.budget ? Number(row.budget) : null,
-      leadCategory: ['Hot', 'Warm', 'Cold'].includes(row.leadCategory) ? row.leadCategory : 'Cold',
-      leadStatus: ['New', 'Contacted', 'Follow-up', 'Converted', 'Lost', 'Do Not Contact'].includes(row.leadStatus) ? row.leadStatus : 'New',
-      assignedTo: row.assignedTo || user?.email || 'Unassigned',
-      assignedToName: row.assignedToName || user?.displayName || 'Unassigned',
-      lastCallAt: null,
-      lastCallOutcome: null,
-      nextFollowUpDate: row.nextFollowUpDate || null,
-      latestFeedback: row.latestFeedback || '',
-      internalNotes: row.internalNotes || 'Imported via CSV',
-      createdBy: user?.email || 'CSV Import',
-      updatedBy: user?.email || 'CSV Import',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    batch.set(newDocRef, newCustomer);
-    batchCount++;
-    results.success++;
-
-    // Commit batches every 400 documents to respect Firestore limits
-    if (batchCount >= 400) {
-      await batch.commit();
-      batchCount = 0;
     }
   }
-
-  if (batchCount > 0) {
-    await batch.commit();
-  }
-
-  await logAudit({
-    action: 'CSV_IMPORT',
-    targetType: 'import',
-    targetId: 'bulk',
-    targetName: 'Customer CSV Import',
-    details: results,
-    user,
-  });
 
   return results;
 }
@@ -386,7 +372,7 @@ export async function seedSampleKanpurCustomers(user) {
       budget: 24000,
       leadCategory: "Hot",
       leadStatus: "Follow-up",
-      nextFollowUpDate: today, // Due today!
+      nextFollowUpDate: today,
       latestFeedback: "Wants to check battery health and physical condition in-store today afternoon.",
       internalNotes: "Referred by Naveen Market electronics association.",
     },
@@ -401,9 +387,9 @@ export async function seedSampleKanpurCustomers(user) {
       budget: 78000,
       leadCategory: "Hot",
       leadStatus: "Follow-up",
-      nextFollowUpDate: today, // Due today!
-      latestFeedback: "Quotations sent on WhatsApp. Comparing price with Nehru Place online sellers.",
-      internalNotes: "Offered 2-year in-store hardware warranty to win deal.",
+      nextFollowUpDate: today,
+      latestFeedback: "Quotations sent on WhatsApp. Comparing price with online sellers.",
+      internalNotes: "Offered 2-year in-store warranty.",
     },
     {
       fullName: "Rajesh Kumar Gupta",
@@ -416,8 +402,8 @@ export async function seedSampleKanpurCustomers(user) {
       budget: 4500,
       leadCategory: "Warm",
       leadStatus: "Contacted",
-      nextFollowUpDate: "2026-10-15", // Past due -> Overdue!
-      latestFeedback: "Asked to call back on Saturday when his son is home with the laptop.",
+      nextFollowUpDate: "2026-10-15", // Overdue!
+      latestFeedback: "Asked to call back when his son brings the laptop.",
       internalNotes: "Frequent buyer of cables and peripherals.",
     },
     {
@@ -425,13 +411,13 @@ export async function seedSampleKanpurCustomers(user) {
       phone: "9838765432",
       email: "dralok.kanpur@gmail.com",
       city: "Swaroop Nagar, Kanpur",
-      source: "Doctor Clinic Referral",
+      source: "Clinic Referral",
       interest: "All-in-One PC",
       requirement: "HP 24-inch AIO Desktop for clinic patient management software",
       budget: 52000,
       leadCategory: "Warm",
       leadStatus: "Follow-up",
-      nextFollowUpDate: "2026-10-25", // Upcoming!
+      nextFollowUpDate: "2026-10-25",
       latestFeedback: "Interested in wireless keyboard mouse combo and anti-glare screen.",
       internalNotes: "Clinic renovation finishing by end of month.",
     },
@@ -442,59 +428,14 @@ export async function seedSampleKanpurCustomers(user) {
       city: "Collector Ganj, Kanpur",
       source: "Wholesale Market",
       interest: "Accounting Desktop",
-      requirement: "Dual Core or i3 desktop with Tally Prime 4.0 and dot matrix printer setup",
+      requirement: "Dual Core or i3 desktop with Tally Prime and printer setup",
       budget: 28000,
       leadCategory: "Cold",
       leadStatus: "New",
       nextFollowUpDate: "2026-11-10",
-      latestFeedback: "Will consider next financial quarter when new warehouse opens.",
-      internalNotes: "Old client from 2021.",
+      latestFeedback: "Will consider next financial quarter.",
+      internalNotes: "Old client.",
     },
-    {
-      fullName: "Vikas Sharma (Coaching Institute)",
-      phone: "9125678901",
-      email: "vikas.targetacademy@gmail.com",
-      city: "Kakadeo Coaching Hub, Kanpur",
-      source: "WhatsApp Campaign",
-      interest: "Bulk Refurbished Desktops",
-      requirement: "12 Core i5 PCs for student online test lab setup",
-      budget: 180000,
-      leadCategory: "Hot",
-      leadStatus: "Converted",
-      nextFollowUpDate: null,
-      latestFeedback: "Deal finalized! 12 Dell OptiPlex systems delivered and installed with networking switch.",
-      internalNotes: "Advance payment received in full via UPI.",
-    },
-    {
-      fullName: "Sunita Tiwari",
-      phone: "9792456781",
-      email: "sunita.t@outlook.com",
-      city: "Kalyanpur, Kanpur",
-      source: "JustDial",
-      interest: "Student Laptop",
-      requirement: "Lightweight 14-inch laptop for B.Tech CS student (Python & Web Dev)",
-      budget: 42000,
-      leadCategory: "Warm",
-      leadStatus: "Follow-up",
-      nextFollowUpDate: today, // Due today!
-      latestFeedback: "Shortlisted ASUS Vivobook 15 and Lenovo IdeaPad. Calling today to confirm stock.",
-      internalNotes: "Requested free laptop bag and mouse.",
-    },
-    {
-      fullName: "Rameshwar Dayal",
-      phone: "9336112233",
-      email: "",
-      city: "Chakeri, Kanpur",
-      source: "Banner Ad",
-      interest: "CCTV & Security",
-      requirement: "8 Channel Hikvision IP Camera setup with 2TB surveillance hard drive",
-      budget: 35000,
-      leadCategory: "Cold",
-      leadStatus: "Do Not Contact",
-      nextFollowUpDate: null,
-      latestFeedback: "Customer opted out - already installed cameras from another local vendor.",
-      internalNotes: "Marked Do Not Contact as requested.",
-    }
   ];
 
   const created = [];

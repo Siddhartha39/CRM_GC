@@ -3,12 +3,25 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { AddCustomerModal } from '../../features/customers/AddCustomerModal';
+import { isStandbyMode } from '../../services/storageAdapter';
+import { AlertCircle, ExternalLink, X } from 'lucide-react';
 
 export function AppLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [showStandbyNotice, setShowStandbyNotice] = useState(false);
+
+  useEffect(() => {
+    setShowStandbyNotice(isStandbyMode());
+
+    const handleStandbyChange = (e) => {
+      setShowStandbyNotice(e.detail?.active || isStandbyMode());
+    };
+    window.addEventListener('galaxy-standby-mode-changed', handleStandbyChange);
+    return () => window.removeEventListener('galaxy-standby-mode-changed', handleStandbyChange);
+  }, []);
 
   // Derive page title and breadcrumbs from pathname
   const getPageInfo = (path) => {
@@ -87,6 +100,33 @@ export function AppLayout() {
           onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
         />
 
+        {/* Cloud Firestore Standby Banner */}
+        {showStandbyNotice && (
+          <div className="bg-amber-100 border-b-2 border-amber-600 px-4 py-2.5 text-xs font-body text-amber-950 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>
+                <strong>Cloud Firestore Standby Mode:</strong> Firestore Database is not yet created in Firebase project <code>galaxycrm-4577f</code>. Data is being safely saved to local standby storage.
+              </span>
+              <a
+                href="https://console.firebase.google.com/project/galaxycrm-4577f/firestore"
+                target="_blank"
+                rel="noreferrer"
+                className="underline font-bold text-secondary-accent inline-flex items-center gap-0.5 ml-1"
+              >
+                Create Firestore Database in Console <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <button
+              onClick={() => setShowStandbyNotice(false)}
+              className="p-1 hover:bg-amber-200 rounded text-amber-900"
+              title="Dismiss banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
           <Outlet context={{ onOpenAddCustomer: () => setIsAddCustomerOpen(true) }} />
         </main>
@@ -97,7 +137,6 @@ export function AppLayout() {
         isOpen={isAddCustomerOpen}
         onClose={() => setIsAddCustomerOpen(false)}
         onCustomerAdded={() => {
-          // Trigger reload on current view if needed
           window.dispatchEvent(new CustomEvent('crm-customer-added'));
         }}
       />
