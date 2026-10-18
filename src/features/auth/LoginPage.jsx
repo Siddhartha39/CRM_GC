@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -10,12 +10,13 @@ import {
   AlertCircle,
   Sparkles,
   ExternalLink,
-  CheckCircle,
+  ArrowRight,
+  LogOut,
 } from 'lucide-react';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, signup, loginAsDemo, user } = useAuth();
+  const { login, signup, loginAsDemo, logout, user, userProfile } = useAuth();
 
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
@@ -25,13 +26,6 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isOperationNotAllowed, setIsOperationNotAllowed] = useState(false);
-
-  // If already logged in, redirect safely via useEffect
-  useEffect(() => {
-    if (user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,17 +85,6 @@ export function LoginPage() {
     setIsOperationNotAllowed(false);
   };
 
-  // If user is already authenticated, don't flash the login card
-  if (user) {
-    return (
-      <div className="min-h-screen bg-paper-dots flex items-center justify-center p-4">
-        <div className="p-6 bg-paper-white card-hand text-center font-heading font-bold text-lg">
-          Entering Galaxy Computers CRM...
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-paper-dots flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-paper-white card-hand-lg border-2 border-border p-8 relative">
@@ -120,6 +103,36 @@ export function LoginPage() {
             CRM • KANPUR STORE DESK
           </p>
         </div>
+
+        {/* Active Session Notice if already logged in */}
+        {user && (
+          <div className="p-3 bg-emerald-50 border-2 border-emerald-600 rounded-lg text-xs font-body text-emerald-950 mb-4 flex items-center justify-between">
+            <div>
+              <div className="font-heading font-bold text-sm text-emerald-900">
+                Active Session: {user.displayName || user.email}
+              </div>
+              <div className="text-emerald-800 text-[11px]">Role: {userProfile?.role || 'admin'}</div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="text-xs py-1 px-2"
+              >
+                Dashboard <ArrowRight className="w-3 h-3" />
+              </Button>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="p-1.5 text-danger hover:bg-red-100 rounded border border-danger/40 text-xs"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Operation Not Allowed Special Help Box */}
         {isOperationNotAllowed && (

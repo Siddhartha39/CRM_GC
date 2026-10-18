@@ -18,7 +18,8 @@ import { LoadingSkeleton } from '../components/ui/LoadingSkeleton';
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
-  if (loading) {
+  // If loading and no user yet, display brief skeleton
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-paper-dots flex items-center justify-center p-6">
         <div className="w-full max-w-md bg-paper-white card-hand p-6">
@@ -31,6 +32,7 @@ function ProtectedRoute({ children }) {
     );
   }
 
+  // If definitely not authenticated, redirect to login
   if (!user) {
     return <Navigate to="/login" replace />;
   }

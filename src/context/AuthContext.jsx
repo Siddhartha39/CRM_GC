@@ -19,7 +19,7 @@ function getSavedDemoAuth() {
       return JSON.parse(saved);
     }
   } catch (e) {
-    // Ignore JSON parse error
+    // Ignore parse error
   }
   return null;
 }
@@ -28,68 +28,84 @@ export function AuthProvider({ children }) {
   const savedDemo = getSavedDemoAuth();
   const [user, setUser] = useState(savedDemo?.demoUser || null);
   const [userProfile, setUserProfile] = useState(savedDemo?.demoProfile || null);
-  const [loading, setLoading] = useState(true);
+  // If demo session exists, we are already loaded immediately!
+  const [loading, setLoading] = useState(!savedDemo);
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
-          setUser(firebaseUser);
+    // Strict safety timeout: never stay in loading state for more than 500ms
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
 
-          // Fetch profile document from Firestore
-          try {
-            const userDocRef = doc(db, 'users', firebaseUser.uid);
-            const snap = await getDoc(userDocRef);
+    let unsubscribe = () => {};
 
-            if (snap.exists()) {
-              setUserProfile(snap.data());
-            } else {
-              const allUsersSnap = await getDocs(collection(db, 'users'));
-              const isFirstUser = allUsersSnap.empty;
+    try {
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        clearTimeout(safetyTimer);
+        try {
+          if (firebaseUser) {
+            setUser(firebaseUser);
 
-              const newProfile = {
+            // Fetch profile document from Firestore
+            try {
+              const userDocRef = doc(db, 'users', firebaseUser.uid);
+              const snap = await getDoc(userDocRef);
+
+              if (snap.exists()) {
+                setUserProfile(snap.data());
+              } else {
+                const allUsersSnap = await getDocs(collection(db, 'users'));
+                const isFirstUser = allUsersSnap.empty;
+
+                const newProfile = {
+                  uid: firebaseUser.uid,
+                  email: firebaseUser.email,
+                  displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Executive',
+                  role: isFirstUser ? 'admin' : 'employee',
+                  status: 'active',
+                  createdAt: serverTimestamp(),
+                  lastLoginAt: serverTimestamp(),
+                };
+
+                await setDoc(userDocRef, newProfile);
+                setUserProfile(newProfile);
+              }
+            } catch (dbErr) {
+              setUserProfile({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
-                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Executive',
-                role: isFirstUser ? 'admin' : 'employee',
+                displayName: firebaseUser.displayName || 'Executive',
+                role: 'admin',
                 status: 'active',
-                createdAt: serverTimestamp(),
-                lastLoginAt: serverTimestamp(),
-              };
-
-              await setDoc(userDocRef, newProfile);
-              setUserProfile(newProfile);
+              });
             }
-          } catch (dbErr) {
-            console.warn('Firestore user doc access failed (using fallback profile):', dbErr);
-            setUserProfile({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.displayName || 'Executive',
-              role: 'admin',
-              status: 'active',
-            });
-          }
-        } else {
-          // If no active Firebase Auth session, check if user is in demo mode!
-          const activeDemo = getSavedDemoAuth();
-          if (activeDemo) {
-            setUser(activeDemo.demoUser);
-            setUserProfile(activeDemo.demoProfile);
           } else {
-            setUser(null);
-            setUserProfile(null);
+            // Check if demo auth is active
+            const activeDemo = getSavedDemoAuth();
+            if (activeDemo) {
+              setUser(activeDemo.demoUser);
+              setUserProfile(activeDemo.demoProfile);
+            } else {
+              setUser(null);
+              setUserProfile(null);
+            }
           }
+        } catch (err) {
+          console.error('Error in auth state change:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Error in auth state change:', err);
-      } finally {
-        setLoading(false);
-      }
-    });
+      });
+    } catch (e) {
+      console.warn('onAuthStateChanged setup error:', e);
+      setLoading(false);
+    }
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, []);
 
   // Login
@@ -204,6 +220,7 @@ export function AuthProvider({ children }) {
     } finally {
       setUser(null);
       setUserProfile(null);
+      setLoading(false);
     }
   };
 
