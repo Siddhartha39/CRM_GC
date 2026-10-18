@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
@@ -26,11 +26,12 @@ export function LoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isOperationNotAllowed, setIsOperationNotAllowed] = useState(false);
 
-  // If already logged in, redirect
-  if (user) {
-    navigate('/', { replace: true });
-    return null;
-  }
+  // If already logged in, redirect safely via useEffect
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,7 +60,7 @@ export function LoginPage() {
       console.error('Auth error:', err);
       let msg = err.message;
 
-      if (err.code === 'auth/operation-not-allowed') {
+      if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/configuration-not-found') {
         setIsOperationNotAllowed(true);
         msg = 'Email/Password sign-in provider is disabled in your Firebase Console for project galaxycrm-4577f.';
       } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
@@ -75,7 +76,7 @@ export function LoginPage() {
   };
 
   const handleInstantDemo = (chosenRole = 'admin') => {
-    const finalName = displayName?.trim() || (chosenRole === 'admin' ? 'Vishal (Store Admin)' : 'Sales Executive');
+    const finalName = displayName?.trim() || (chosenRole === 'admin' ? 'Vishal' : 'Sales Executive');
     const finalEmail = email?.trim() || (chosenRole === 'admin' ? 'admin@galaxycomputers.in' : 'sales@galaxycomputers.in');
     loginAsDemo(chosenRole, finalName, finalEmail);
     navigate('/', { replace: true });
@@ -89,6 +90,17 @@ export function LoginPage() {
     setErrorMessage('');
     setIsOperationNotAllowed(false);
   };
+
+  // If user is already authenticated, don't flash the login card
+  if (user) {
+    return (
+      <div className="min-h-screen bg-paper-dots flex items-center justify-center p-4">
+        <div className="p-6 bg-paper-white card-hand text-center font-heading font-bold text-lg">
+          Entering Galaxy Computers CRM...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-paper-dots flex items-center justify-center p-4">
@@ -127,6 +139,7 @@ export function LoginPage() {
             </div>
             <div className="pt-1">
               <Button
+                type="button"
                 variant="primary"
                 size="sm"
                 icon={Sparkles}
@@ -249,10 +262,11 @@ export function LoginPage() {
           </div>
 
           <Button
+            type="button"
             variant="sticky"
-            size="sm"
+            size="md"
             onClick={() => handleInstantDemo('admin')}
-            className="w-full text-xs font-bold"
+            className="w-full text-sm font-bold"
           >
             🚀 Launch CRM as Admin ({displayName || 'Vishal'})
           </Button>

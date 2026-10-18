@@ -294,11 +294,20 @@ export async function getCustomers({
     });
 
     // Client-side filtering and search
-    return filterAndSearchCustomers(results, { category, status, search });
+    let filtered = filterAndSearchCustomers(results, { category, status, search });
+    if (filtered.length === 0 && !search && (!category || category === 'All') && (!status || status === 'All')) {
+      const seeded = await seedSampleKanpurCustomers({ email: 'admin@galaxycomputers.in', displayName: 'Vishal' });
+      return seeded;
+    }
+    return filtered;
   } catch (error) {
     // Fallback to local collection if Firestore is disabled
     setStandbyMode(true);
-    const local = getLocalCollection('customers');
+    let local = getLocalCollection('customers');
+    if (local.length === 0 && !search && (!category || category === 'All') && (!status || status === 'All')) {
+      const seeded = await seedSampleKanpurCustomers({ email: 'admin@galaxycomputers.in', displayName: 'Vishal' });
+      return seeded;
+    }
     return filterAndSearchCustomers(local, { category, status, search });
   }
 }

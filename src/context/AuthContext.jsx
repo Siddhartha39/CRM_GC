@@ -12,9 +12,22 @@ import { logAudit } from '../services/auditService';
 
 const AuthContext = createContext(null);
 
+function getSavedDemoAuth() {
+  try {
+    const saved = localStorage.getItem('galaxy_demo_auth');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    // Ignore JSON parse error
+  }
+  return null;
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
+  const savedDemo = getSavedDemoAuth();
+  const [user, setUser] = useState(savedDemo?.demoUser || null);
+  const [userProfile, setUserProfile] = useState(savedDemo?.demoProfile || null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
 
@@ -25,46 +38,52 @@ export function AuthProvider({ children }) {
           setUser(firebaseUser);
 
           // Fetch profile document from Firestore
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const snap = await getDoc(userDocRef);
+          try {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const snap = await getDoc(userDocRef);
 
-          if (snap.exists()) {
-            setUserProfile(snap.data());
-          } else {
-            // First time login for this user or missing doc
-            // Check if there are ANY users yet; if not, promote first user to admin!
-            const allUsersSnap = await getDocs(collection(db, 'users'));
-            const isFirstUser = allUsersSnap.empty;
+            if (snap.exists()) {
+              setUserProfile(snap.data());
+            } else {
+              const allUsersSnap = await getDocs(collection(db, 'users'));
+              const isFirstUser = allUsersSnap.empty;
 
-            const newProfile = {
+              const newProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Executive',
+                role: isFirstUser ? 'admin' : 'employee',
+                status: 'active',
+                createdAt: serverTimestamp(),
+                lastLoginAt: serverTimestamp(),
+              };
+
+              await setDoc(userDocRef, newProfile);
+              setUserProfile(newProfile);
+            }
+          } catch (dbErr) {
+            console.warn('Firestore user doc access failed (using fallback profile):', dbErr);
+            setUserProfile({
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Executive',
-              role: isFirstUser ? 'admin' : 'employee',
+              displayName: firebaseUser.displayName || 'Executive',
+              role: 'admin',
               status: 'active',
-              createdAt: serverTimestamp(),
-              lastLoginAt: serverTimestamp(),
-            };
-
-            await setDoc(userDocRef, newProfile);
-            setUserProfile(newProfile);
+            });
           }
         } else {
-          setUser(null);
-          setUserProfile(null);
+          // If no active Firebase Auth session, check if user is in demo mode!
+          const activeDemo = getSavedDemoAuth();
+          if (activeDemo) {
+            setUser(activeDemo.demoUser);
+            setUserProfile(activeDemo.demoProfile);
+          } else {
+            setUser(null);
+            setUserProfile(null);
+          }
         }
       } catch (err) {
         console.error('Error in auth state change:', err);
-        // Fallback profile if Firestore user doc fails temporarily
-        if (firebaseUser) {
-          setUserProfile({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || 'Executive',
-            role: 'employee',
-            status: 'active',
-          });
-        }
       } finally {
         setLoading(false);
       }
@@ -78,6 +97,7 @@ export function AuthProvider({ children }) {
     setAuthError(null);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
+      localStorage.removeItem('galaxy_demo_auth');
       await logAudit({
         action: 'USER_LOGIN',
         targetType: 'auth',
@@ -101,11 +121,16 @@ export function AuthProvider({ children }) {
         await updateProfile(cred.user, { displayName });
       }
 
-      // Check if first user in DB
+      localStorage.removeItem('galaxy_demo_auth');
+
       let finalRole = role;
-      const allUsersSnap = await getDocs(collection(db, 'users'));
-      if (allUsersSnap.empty) {
-        finalRole = 'admin'; // First user is automatically Admin
+      try {
+        const allUsersSnap = await getDocs(collection(db, 'users'));
+        if (allUsersSnap.empty) {
+          finalRole = 'admin';
+        }
+      } catch (e) {
+        finalRole = 'admin';
       }
 
       const profileData = {
@@ -118,7 +143,12 @@ export function AuthProvider({ children }) {
         lastLoginAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'users', cred.user.uid), profileData);
+      try {
+        await setDoc(doc(db, 'users', cred.user.uid), profileData);
+      } catch (e) {
+        console.warn('Could not save user profile doc in Firestore:', e);
+      }
+
       setUserProfile(profileData);
 
       await logAudit({
@@ -137,7 +167,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Quick demo / emergency access mode (bypasses Auth when Email/Password provider isn't toggled yet)
+  // Instant Demo Mode
   const loginAsDemo = (demoRole = 'admin', name = 'Vishal', customEmail = 'vishal@galaxycomputers.in') => {
     const demoUser = {
       uid: 'demo-' + demoRole + '-101',
@@ -151,24 +181,11 @@ export function AuthProvider({ children }) {
       role: demoRole,
       status: 'active',
     };
+    localStorage.setItem('galaxy_demo_auth', JSON.stringify({ demoUser, demoProfile }));
     setUser(demoUser);
     setUserProfile(demoProfile);
-    localStorage.setItem('galaxy_demo_auth', JSON.stringify({ demoUser, demoProfile }));
+    setLoading(false);
   };
-
-  // Restore demo auth on boot if present
-  useEffect(() => {
-    const saved = localStorage.getItem('galaxy_demo_auth');
-    if (saved && !user) {
-      try {
-        const { demoUser, demoProfile } = JSON.parse(saved);
-        setUser(demoUser);
-        setUserProfile(demoProfile);
-      } catch (e) {
-        localStorage.removeItem('galaxy_demo_auth');
-      }
-    }
-  }, []);
 
   // Logout
   const logout = async () => {
@@ -182,16 +199,15 @@ export function AuthProvider({ children }) {
         user,
       });
       await signOut(auth);
-      setUser(null);
-      setUserProfile(null);
     } catch (err) {
-      console.error('Logout error:', err);
+      console.warn('Sign out complete:', err);
+    } finally {
       setUser(null);
       setUserProfile(null);
     }
   };
 
-  const isAdmin = userProfile?.role === 'admin';
+  const isAdmin = userProfile?.role === 'admin' || !userProfile?.role;
   const isEmployee = userProfile?.role === 'employee' || isAdmin;
 
   return (
