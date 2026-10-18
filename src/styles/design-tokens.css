@@ -1,0 +1,214 @@
+:root {
+  --background: #fdfbf7;
+  --foreground: #2d2d2d;
+  --muted: #e5e0d8;
+  --accent: #ff4d4d;
+  --border: #2d2d2d;
+  --secondary-accent: #2d5da1;
+  --paper-white: #ffffff;
+  --sticky-yellow: #fff9c4;
+  --success: #2e7d32;
+  --warning: #a66a00;
+  --danger: #c62828;
+
+  --wobbly: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  --wobbly-md: 25px 8px 20px 10px / 10px 22px 8px 25px;
+  --wobbly-sm: 8px 4px 6px 3px / 4px 7px 3px 6px;
+
+  --shadow-hand: 4px 4px 0 #2d2d2d;
+  --shadow-hand-lg: 8px 8px 0 #2d2d2d;
+  --shadow-hand-sm: 2px 2px 0 #2d2d2d;
+  --shadow-hand-active: 1px 1px 0 #2d2d2d;
+}
+
+/* Dotted paper background pattern */
+.bg-paper-dots {
+  background-color: var(--background);
+  background-image: radial-gradient(var(--muted) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+/* Ruled paper lines for notes/history */
+.bg-ruled-paper {
+  background-color: var(--paper-white);
+  background-image: linear-gradient(rgba(45, 93, 161, 0.08) 1px, transparent 1px);
+  background-size: 100% 28px;
+  line-height: 28px;
+}
+
+/* Wobbly border helpers */
+.border-wobbly {
+  border-radius: var(--wobbly);
+}
+
+.border-wobbly-md {
+  border-radius: var(--wobbly-md);
+}
+
+.border-wobbly-sm {
+  border-radius: var(--wobbly-sm);
+}
+
+/* Hard offset shadows */
+.shadow-hand {
+  box-shadow: var(--shadow-hand);
+}
+
+.shadow-hand-lg {
+  box-shadow: var(--shadow-hand-lg);
+}
+
+.shadow-hand-sm {
+  box-shadow: var(--shadow-hand-sm);
+}
+
+/* Hand-drawn button behavior */
+.btn-hand {
+  background-color: var(--paper-white);
+  color: var(--foreground);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow-hand);
+  border-radius: var(--wobbly-md);
+  font-family: 'Patrick Hand', cursive, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  transition: all 0.12s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.15rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-hand:hover:not(:disabled) {
+  background-color: var(--accent);
+  color: #ffffff;
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 #2d2d2d;
+}
+
+.btn-hand:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: var(--shadow-hand-active);
+}
+
+.btn-hand:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: 2px 2px 0 #888888;
+}
+
+/* Secondary Button (Blue ink) */
+.btn-hand-secondary {
+  background-color: #f0f4f9;
+  border-color: var(--secondary-accent);
+  color: var(--secondary-accent);
+}
+.btn-hand-secondary:hover:not(:disabled) {
+  background-color: var(--secondary-accent);
+  color: #ffffff;
+}
+
+/* Muted / Neutral Button */
+.btn-hand-muted {
+  background-color: #f7f5f0;
+  border-color: #666666;
+  color: #444444;
+}
+.btn-hand-muted:hover:not(:disabled) {
+  background-color: #555555;
+  color: #ffffff;
+}
+
+/* Sticky Yellow Button */
+.btn-hand-sticky {
+  background-color: var(--sticky-yellow);
+  color: #332200;
+  border-color: var(--border);
+}
+.btn-hand-sticky:hover:not(:disabled) {
+  background-color: #ffeb3b;
+  color: #222222;
+}
+
+/* Hand-drawn Card */
+.card-hand {
+  background-color: var(--paper-white);
+  border: 2px solid var(--border);
+  border-radius: var(--wobbly-md);
+  box-shadow: var(--shadow-hand);
+}
+
+.card-hand-lg {
+  background-color: var(--paper-white);
+  border: 2.5px solid var(--border);
+  border-radius: var(--wobbly);
+  box-shadow: var(--shadow-hand-lg);
+}
+
+/* Form input hand-drawn styling */
+.input-hand {
+  background-color: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: var(--wobbly-md);
+  box-shadow: var(--shadow-hand-sm);
+  padding: 0.5rem 0.85rem;
+  font-family: 'Patrick Hand', cursive, sans-serif;
+  font-size: 1.05rem;
+  color: var(--foreground);
+  outline: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.input-hand:focus {
+  border-color: var(--secondary-accent);
+  box-shadow: 3px 3px 0 var(--secondary-accent);
+}
+
+/* Decorative Washi Tape effect */
+.washi-tape {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1deg);
+  width: 90px;
+  height: 22px;
+  background-color: rgba(255, 249, 196, 0.85);
+  border-left: 2px dashed rgba(45, 45, 45, 0.4);
+  border-right: 2px dashed rgba(45, 45, 45, 0.4);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.washi-tape-blue {
+  background-color: rgba(186, 218, 255, 0.85);
+}
+
+.washi-tape-red {
+  background-color: rgba(255, 205, 210, 0.85);
+}
+
+/* Hand-drawn status badges */
+.badge-hot {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 2px solid #c62828;
+  box-shadow: 2px 2px 0 #c62828;
+}
+
+.badge-warm {
+  background-color: #fff8e1;
+  color: #a66a00;
+  border: 2px solid #a66a00;
+  box-shadow: 2px 2px 0 #a66a00;
+}
+
+.badge-cold {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 2px solid #1565c0;
+  box-shadow: 2px 2px 0 #1565c0;
+}

@@ -1,0 +1,49 @@
+@import './design-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-body;
+    background-color: var(--background);
+    background-image: radial-gradient(var(--muted) 1.2px, transparent 1.2px);
+    background-size: 24px 24px;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-wide;
+  }
+
+  /* Custom scrollbar matching pencil/paper aesthetics */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1ede4;
+    border-left: 1px dashed #d5cfc5;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2d2d2d;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff4d4d;
+  }
+}
+
+/* Animations and transitions */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

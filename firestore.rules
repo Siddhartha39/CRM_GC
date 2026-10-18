@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        getUserData().role == 'admin' ||
+        request.auth.token.admin == true
+      );
+    }
+
+    function isEmployeeOrAdmin() {
+      return isAuthenticated() && (
+        getUserData().status != 'disabled'
+      );
+    }
+
+    // Customers collection
+    match /customers/{customerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.fullName is string &&
+        request.resource.data.phone is string &&
+        request.resource.data.leadCategory in ['Hot', 'Warm', 'Cold'] &&
+        request.resource.data.leadStatus in ['New', 'Contacted', 'Follow-up', 'Converted', 'Lost', 'Do Not Contact'];
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Call logs collection - append only for audit integrity
+    match /callLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId is string &&
+        request.resource.data.callOutcome in [
+          'Interested',
+          'Call Back Later',
+          'No Requirement',
+          'No Answer',
+          'Busy',
+          'Not Interested',
+          'Converted / Sale Completed',
+          'Wrong Number'
+        ];
+      // Prevent deleting or rewriting historical call logs
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Follow-ups collection
+    match /followUps/{followUpId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.customerId is string &&
+        request.resource.data.dueDate is string &&
+        request.resource.data.status in ['Pending', 'Completed', 'Cancelled'];
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Any authenticated user can read user profiles to see assigned employees
+      allow read: if isAuthenticated();
+      // Users can update their own profile name/avatar, but CANNOT elevate their own role
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']))
+      );
+      // Only admins or new user initial setup can create their own document
+      allow create: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid == userId
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Audit logs - append-only log of customer activity
+    match /auditLogs/{auditId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Counters collection for generating sequential IDs safely (e.g. GC-10001)
+    match /counters/{counterId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}
