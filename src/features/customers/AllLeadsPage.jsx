@@ -74,6 +74,9 @@ export function AllLeadsPage({ forcedCategory = null }) {
 
   useEffect(() => {
     fetchLeads();
+    const handleCustAdded = () => fetchLeads();
+    window.addEventListener('crm-customer-added', handleCustAdded);
+    return () => window.removeEventListener('crm-customer-added', handleCustAdded);
   }, [categoryFilter, statusFilter, forcedCategory]);
 
   // Handle Search Debounce

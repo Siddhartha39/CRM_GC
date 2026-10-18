@@ -102,6 +102,7 @@ export function AddCustomerModal({
       setForm(initialForm);
       setDuplicateWarning(null);
       if (onCustomerAdded) onCustomerAdded(newCust);
+      window.dispatchEvent(new CustomEvent('crm-customer-added'));
       onClose();
     } catch (err) {
       console.error('Error adding customer:', err);

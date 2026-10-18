@@ -1,17 +1,15 @@
 import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { isStandbyMode, getLocalCollection, withTimeout } from '../services/storageAdapter';
 
 /**
  * Normalizes phone numbers for duplicate checks and storage.
- * Strips spaces, hyphens, parentheses, and leading zeros/+91 country code.
  * Standardizes Indian phone numbers to 10 digits.
  */
 export function normalizePhoneNumber(rawPhone) {
   if (!rawPhone) return '';
-  // Convert to string and strip non-digit characters
   let digits = String(rawPhone).replace(/\D/g, '');
 
-  // If starts with 91 and has 12 digits, strip country code
   if (digits.length === 12 && digits.startsWith('91')) {
     digits = digits.slice(2);
   } else if (digits.length === 11 && digits.startsWith('0')) {
@@ -35,13 +33,19 @@ export function formatPhoneNumber(phone) {
 
 /**
  * Safely generates sequential or collision-free customer IDs (e.g. GC-10001)
- * Uses Firestore transaction on a counter document, with safe fallback.
+ * Never blocks or hangs if Firestore is disabled.
  */
 export async function generateCustomerId() {
+  if (isStandbyMode()) {
+    const local = getLocalCollection('customers');
+    const nextNumber = 10001 + local.length;
+    return `GC-${nextNumber}`;
+  }
+
   const counterRef = doc(db, 'counters', 'customers');
 
   try {
-    const newId = await runTransaction(db, async (transaction) => {
+    const transactionPromise = runTransaction(db, async (transaction) => {
       const counterDoc = await transaction.get(counterRef);
       let nextNumber = 10001;
 
@@ -56,12 +60,12 @@ export async function generateCustomerId() {
       return `GC-${nextNumber}`;
     });
 
-    return newId;
+    return await withTimeout(transactionPromise, 1000);
   } catch (error) {
-    console.warn('Transaction failed for counter, generating timestamp-based ID:', error);
-    // Safe collision-resistant fallback
+    // Immediate fallback without waiting
+    const local = getLocalCollection('customers');
     const suffix = Math.floor(1000 + Math.random() * 9000);
-    return `GC-${Date.now().toString().slice(-4)}${suffix}`;
+    return `GC-${10001 + local.length || suffix}`;
   }
 }
 

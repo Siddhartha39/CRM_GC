@@ -22,6 +22,7 @@ export function isFirestoreDisabledError(error) {
     msg.includes('Cloud Firestore API has not been used') ||
     msg.includes('is disabled') ||
     msg.includes('permission-denied') ||
+    msg.includes('timeout') ||
     msg.includes('Failed to get document because the client is offline')
   );
 }
@@ -32,7 +33,23 @@ export function setStandbyMode(active = true) {
 }
 
 export function isStandbyMode() {
-  return localStorage.getItem(STORAGE_KEYS.IS_STANDBY) === 'true';
+  const val = localStorage.getItem(STORAGE_KEYS.IS_STANDBY);
+  // Default to true if demo auth is active or if standby was explicitly set
+  if (val === 'false') return false;
+  if (val === 'true') return true;
+  if (localStorage.getItem('galaxy_demo_auth')) return true;
+  return false;
+}
+
+// Timeout helper to avoid waiting on hanging Firestore network requests
+export function withTimeout(promise, ms = 1500) {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Firestore network timeout (${ms}ms)`));
+    }, ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
 // Local collection operations

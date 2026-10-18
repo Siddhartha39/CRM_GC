@@ -8,10 +8,8 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   limit,
   serverTimestamp,
-  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { normalizePhoneNumber, generateCustomerId } from '../utils/validation';
@@ -21,6 +19,7 @@ import {
   isFirestoreDisabledError,
   isStandbyMode,
   setStandbyMode,
+  withTimeout,
   getLocalCollection,
   addLocalDocument,
   updateLocalDocument,
@@ -36,20 +35,25 @@ export async function checkDuplicatePhone(phone, excludeDocId = null) {
   const norm = normalizePhoneNumber(phone);
   if (!norm) return null;
 
+  if (isStandbyMode()) {
+    const local = getLocalCollection('customers');
+    const match = local.find(c => c.id !== excludeDocId && c.normalizedPhone === norm);
+    return match || null;
+  }
+
   try {
     const q = query(
       collection(db, CUSTOMERS_COLLECTION),
       where('normalizedPhone', '==', norm),
       limit(2)
     );
-    const snap = await getDocs(q);
+    const snap = await withTimeout(getDocs(q), 1000);
     const duplicates = snap.docs
       .filter(doc => doc.id !== excludeDocId)
       .map(doc => ({ id: doc.id, ...doc.data() }));
 
     return duplicates.length > 0 ? duplicates[0] : null;
   } catch (error) {
-    // Check local fallback
     const local = getLocalCollection('customers');
     const match = local.find(c => c.id !== excludeDocId && c.normalizedPhone === norm);
     return match || null;
@@ -67,14 +71,8 @@ export async function createCustomer(data, user) {
   // Generate unique customer ID
   let customerId = data.customerId;
   if (!customerId) {
-    try {
-      customerId = await generateCustomerId();
-    } catch (e) {
-      customerId = `GC-${10000 + Math.floor(Math.random() * 9000)}`;
-    }
+    customerId = await generateCustomerId();
   }
-
-  const customerDocRef = doc(collection(db, CUSTOMERS_COLLECTION));
 
   const customerRecord = {
     customerId,
@@ -102,32 +100,67 @@ export async function createCustomer(data, user) {
     internalNotes: data.internalNotes?.trim() || '',
     createdBy: user?.email || 'System',
     updatedBy: user?.email || 'System',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+    createdAt: { seconds: Math.floor(Date.now() / 1000) },
+    updatedAt: { seconds: Math.floor(Date.now() / 1000) },
   };
 
+  // If already in standby mode, save locally immediately (<10ms)
+  if (isStandbyMode()) {
+    const saved = addLocalDocument('customers', customerRecord);
+
+    if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
+      addLocalDocument('followUps', {
+        customerId: saved.id,
+        customerCustomId: customerId,
+        customerNameSnapshot: customerRecord.fullName,
+        customerPhoneSnapshot: customerRecord.phone,
+        leadCategory: customerRecord.leadCategory,
+        requirement: customerRecord.requirement,
+        purpose: 'Initial Follow-up after registration',
+        dueDate: data.nextFollowUpDate,
+        status: 'Pending',
+        assignedTo: customerRecord.assignedTo,
+        createdBy: user?.email || 'System',
+        rescheduleHistory: [],
+      });
+    }
+
+    return saved;
+  }
+
+  // Attempt Firestore with strict 1.5s timeout
   try {
-    await setDoc(customerDocRef, customerRecord);
+    const customerDocRef = doc(collection(db, CUSTOMERS_COLLECTION));
+    const firestoreData = {
+      ...customerRecord,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await withTimeout(setDoc(customerDocRef, firestoreData), 1500);
 
     if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
       try {
         const followUpRef = doc(collection(db, 'followUps'));
-        await setDoc(followUpRef, {
-          customerId: customerDocRef.id,
-          customerCustomId: customerId,
-          customerNameSnapshot: customerRecord.fullName,
-          customerPhoneSnapshot: customerRecord.phone,
-          leadCategory: customerRecord.leadCategory,
-          requirement: customerRecord.requirement,
-          purpose: 'Initial Follow-up after registration',
-          dueDate: data.nextFollowUpDate,
-          status: 'Pending',
-          assignedTo: customerRecord.assignedTo,
-          createdBy: user?.email || 'System',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          rescheduleHistory: [],
-        });
+        await withTimeout(
+          setDoc(followUpRef, {
+            customerId: customerDocRef.id,
+            customerCustomId: customerId,
+            customerNameSnapshot: customerRecord.fullName,
+            customerPhoneSnapshot: customerRecord.phone,
+            leadCategory: customerRecord.leadCategory,
+            requirement: customerRecord.requirement,
+            purpose: 'Initial Follow-up after registration',
+            dueDate: data.nextFollowUpDate,
+            status: 'Pending',
+            assignedTo: customerRecord.assignedTo,
+            createdBy: user?.email || 'System',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            rescheduleHistory: [],
+          }),
+          1500
+        );
       } catch (e) {
         console.warn('Initial follow-up doc creation skipped:', e);
       }
@@ -144,31 +177,28 @@ export async function createCustomer(data, user) {
 
     return { id: customerDocRef.id, ...customerRecord };
   } catch (error) {
-    if (isFirestoreDisabledError(error)) {
-      console.warn('Firestore is disabled in Firebase Console. Using local standby storage:', error);
-      setStandbyMode(true);
-      const saved = addLocalDocument('customers', { id: customerDocRef.id, ...customerRecord });
+    console.warn('Firestore write failed or timed out. Falling back to local standby storage:', error);
+    setStandbyMode(true);
+    const saved = addLocalDocument('customers', customerRecord);
 
-      if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
-        addLocalDocument('followUps', {
-          customerId: saved.id,
-          customerCustomId: customerId,
-          customerNameSnapshot: customerRecord.fullName,
-          customerPhoneSnapshot: customerRecord.phone,
-          leadCategory: customerRecord.leadCategory,
-          requirement: customerRecord.requirement,
-          purpose: 'Initial Follow-up after registration',
-          dueDate: data.nextFollowUpDate,
-          status: 'Pending',
-          assignedTo: customerRecord.assignedTo,
-          createdBy: user?.email || 'System',
-          rescheduleHistory: [],
-        });
-      }
-
-      return saved;
+    if (data.nextFollowUpDate && customerRecord.leadStatus !== 'Do Not Contact') {
+      addLocalDocument('followUps', {
+        customerId: saved.id,
+        customerCustomId: customerId,
+        customerNameSnapshot: customerRecord.fullName,
+        customerPhoneSnapshot: customerRecord.phone,
+        leadCategory: customerRecord.leadCategory,
+        requirement: customerRecord.requirement,
+        purpose: 'Initial Follow-up after registration',
+        dueDate: data.nextFollowUpDate,
+        status: 'Pending',
+        assignedTo: customerRecord.assignedTo,
+        createdBy: user?.email || 'System',
+        rescheduleHistory: [],
+      });
     }
-    throw error;
+
+    return saved;
   }
 }
 
@@ -190,12 +220,19 @@ export async function updateCustomer(docId, updates, user) {
   delete cleanUpdates.id;
   delete cleanUpdates.createdAt;
   delete cleanUpdates.createdBy;
-  cleanUpdates.updatedAt = serverTimestamp();
+  cleanUpdates.updatedAt = { seconds: Math.floor(Date.now() / 1000) };
   cleanUpdates.updatedBy = user?.email || 'System';
+
+  if (isStandbyMode()) {
+    return updateLocalDocument('customers', docId, cleanUpdates);
+  }
 
   try {
     const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
-    await updateDoc(customerRef, cleanUpdates);
+    await withTimeout(
+      updateDoc(customerRef, { ...cleanUpdates, updatedAt: serverTimestamp() }),
+      1500
+    );
 
     await logAudit({
       action: 'UPDATE_CUSTOMER',
@@ -208,10 +245,7 @@ export async function updateCustomer(docId, updates, user) {
 
     return { id: docId, ...cleanUpdates };
   } catch (error) {
-    if (isFirestoreDisabledError(error) || isStandbyMode()) {
-      return updateLocalDocument('customers', docId, cleanUpdates);
-    }
-    throw error;
+    return updateLocalDocument('customers', docId, cleanUpdates);
   }
 }
 
@@ -219,9 +253,13 @@ export async function updateCustomer(docId, updates, user) {
  * Delete a customer record (Admin only)
  */
 export async function deleteCustomer(docId, user) {
+  if (isStandbyMode()) {
+    return deleteLocalDocument('customers', docId);
+  }
+
   try {
     const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
-    await deleteDoc(customerRef);
+    await withTimeout(deleteDoc(customerRef), 1500);
 
     await logAudit({
       action: 'DELETE_CUSTOMER',
@@ -232,10 +270,7 @@ export async function deleteCustomer(docId, user) {
 
     return true;
   } catch (error) {
-    if (isFirestoreDisabledError(error) || isStandbyMode()) {
-      return deleteLocalDocument('customers', docId);
-    }
-    throw error;
+    return deleteLocalDocument('customers', docId);
   }
 }
 
@@ -243,14 +278,16 @@ export async function deleteCustomer(docId, user) {
  * Get single customer document by ID
  */
 export async function getCustomerById(docId) {
-  try {
-    const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
-    const snap = await getDoc(customerRef);
-    if (snap.exists()) {
-      return { id: snap.id, ...snap.data() };
+  if (!isStandbyMode()) {
+    try {
+      const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
+      const snap = await withTimeout(getDoc(customerRef), 1000);
+      if (snap.exists()) {
+        return { id: snap.id, ...snap.data() };
+      }
+    } catch (error) {
+      // Fallback to local
     }
-  } catch (error) {
-    // Check local fallback
   }
 
   const local = getLocalCollection('customers');
@@ -268,48 +305,47 @@ export async function getCustomers({
   search = '',
   limitCount = 100,
 } = {}) {
-  try {
-    let q = collection(db, CUSTOMERS_COLLECTION);
-    const conditions = [];
+  let list = [];
 
-    if (category && category !== 'All') {
-      conditions.push(where('leadCategory', '==', category));
-    }
-    if (status && status !== 'All') {
-      conditions.push(where('leadStatus', '==', status));
-    }
+  if (!isStandbyMode()) {
+    try {
+      let q = collection(db, CUSTOMERS_COLLECTION);
+      const conditions = [];
 
-    const firestoreQuery = query(q, ...conditions, limit(limitCount));
-    const snap = await getDocs(firestoreQuery);
-
-    let results = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    // Merge with any local documents created during standby
-    const local = getLocalCollection('customers');
-    const existingIds = new Set(results.map(r => r.id));
-    local.forEach(l => {
-      if (!existingIds.has(l.id)) {
-        results.push(l);
+      if (category && category !== 'All') {
+        conditions.push(where('leadCategory', '==', category));
       }
-    });
+      if (status && status !== 'All') {
+        conditions.push(where('leadStatus', '==', status));
+      }
 
-    // Client-side filtering and search
-    let filtered = filterAndSearchCustomers(results, { category, status, search });
-    if (filtered.length === 0 && !search && (!category || category === 'All') && (!status || status === 'All')) {
-      const seeded = await seedSampleKanpurCustomers({ email: 'admin@galaxycomputers.in', displayName: 'Vishal' });
-      return seeded;
+      const firestoreQuery = query(q, ...conditions, limit(limitCount));
+      const snap = await withTimeout(getDocs(firestoreQuery), 1500);
+
+      list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Merge with any local documents created during standby
+      const local = getLocalCollection('customers');
+      const existingIds = new Set(list.map(r => r.id));
+      local.forEach(l => {
+        if (!existingIds.has(l.id)) {
+          list.push(l);
+        }
+      });
+    } catch (error) {
+      setStandbyMode(true);
+      list = getLocalCollection('customers');
     }
-    return filtered;
-  } catch (error) {
-    // Fallback to local collection if Firestore is disabled
-    setStandbyMode(true);
-    let local = getLocalCollection('customers');
-    if (local.length === 0 && !search && (!category || category === 'All') && (!status || status === 'All')) {
-      const seeded = await seedSampleKanpurCustomers({ email: 'admin@galaxycomputers.in', displayName: 'Vishal' });
-      return seeded;
-    }
-    return filterAndSearchCustomers(local, { category, status, search });
+  } else {
+    list = getLocalCollection('customers');
   }
+
+  let filtered = filterAndSearchCustomers(list, { category, status, search });
+  if (filtered.length === 0 && !search && (!category || category === 'All') && (!status || status === 'All')) {
+    const seeded = await seedSampleKanpurCustomers({ email: 'admin@galaxycomputers.in', displayName: 'Vishal' });
+    return seeded;
+  }
+  return filtered;
 }
 
 function filterAndSearchCustomers(list, { category, status, search }) {
@@ -411,7 +447,7 @@ export async function seedSampleKanpurCustomers(user) {
       budget: 4500,
       leadCategory: "Warm",
       leadStatus: "Contacted",
-      nextFollowUpDate: "2026-10-15", // Overdue!
+      nextFollowUpDate: "2026-10-15",
       latestFeedback: "Asked to call back when his son brings the laptop.",
       internalNotes: "Frequent buyer of cables and peripherals.",
     },
