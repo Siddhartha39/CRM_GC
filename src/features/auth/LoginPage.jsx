@@ -69,11 +69,21 @@ export function LoginPage() {
     }
   };
 
-  const handleInstantDemo = (chosenRole = 'admin') => {
-    const finalName = displayName?.trim() || (chosenRole === 'admin' ? 'Vishal' : 'Sales Executive');
-    const finalEmail = email?.trim() || (chosenRole === 'admin' ? 'admin@galaxycomputers.in' : 'sales@galaxycomputers.in');
-    loginAsDemo(chosenRole, finalName, finalEmail);
-    navigate('/', { replace: true });
+  const handleInstantDemo = async (chosenRole = 'admin') => {
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      await login('admin@galaxycomputers.in', 'galaxy123');
+      navigate('/', { replace: true });
+    } catch (err) {
+      console.warn('Real login attempt:', err);
+      const finalName = displayName?.trim() || (chosenRole === 'admin' ? 'Vishal' : 'Sales Executive');
+      const finalEmail = email?.trim() || (chosenRole === 'admin' ? 'admin@galaxycomputers.in' : 'sales@galaxycomputers.in');
+      loginAsDemo(chosenRole, finalName, finalEmail);
+      navigate('/', { replace: true });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDemoFill = (demoEmail, demoRole) => {
