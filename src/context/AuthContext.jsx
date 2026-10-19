@@ -57,13 +57,14 @@ export function AuthProvider({ children }) {
               } else {
                 const allUsersSnap = await getDocs(collection(db, 'users'));
                 const isFirstUser = allUsersSnap.empty;
+                const isKnownAdmin = firebaseUser.email === '63387siddhartha@gmail.com' || firebaseUser.email === 'siddhartha@gmail.com';
 
                 const newProfile = {
                   uid: firebaseUser.uid,
                   email: firebaseUser.email,
                   displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Executive',
-                  role: isFirstUser ? 'admin' : 'employee',
-                  status: 'active',
+                  role: (isFirstUser || isKnownAdmin) ? 'admin' : 'employee',
+                  status: (isFirstUser || isKnownAdmin) ? 'active' : 'pending_approval',
                   createdAt: serverTimestamp(),
                   lastLoginAt: serverTimestamp(),
                 };
@@ -76,8 +77,8 @@ export function AuthProvider({ children }) {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 displayName: firebaseUser.displayName || 'Executive',
-                role: 'admin',
-                status: 'active',
+                role: 'employee',
+                status: 'pending_approval',
               });
             }
           } else {
@@ -139,14 +140,22 @@ export function AuthProvider({ children }) {
 
       localStorage.removeItem('galaxy_demo_auth');
 
-      let finalRole = role;
+      let finalRole = 'employee';
+      let finalStatus = 'pending_approval';
+
+      const isKnownAdmin = email === '63387siddhartha@gmail.com' || email === 'siddhartha@gmail.com';
+
       try {
         const allUsersSnap = await getDocs(collection(db, 'users'));
-        if (allUsersSnap.empty) {
+        if (allUsersSnap.empty || isKnownAdmin) {
           finalRole = 'admin';
+          finalStatus = 'active';
         }
       } catch (e) {
-        finalRole = 'admin';
+        if (isKnownAdmin) {
+          finalRole = 'admin';
+          finalStatus = 'active';
+        }
       }
 
       const profileData = {
@@ -154,7 +163,7 @@ export function AuthProvider({ children }) {
         email: cred.user.email,
         displayName: displayName || email.split('@')[0],
         role: finalRole,
-        status: 'active',
+        status: finalStatus,
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
       };
@@ -172,7 +181,7 @@ export function AuthProvider({ children }) {
         targetType: 'auth',
         targetId: cred.user.uid,
         targetName: email,
-        details: { role: finalRole },
+        details: { role: finalRole, status: finalStatus },
         user: cred.user,
       });
 
@@ -183,7 +192,23 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Instant Demo Mode
+  // Refresh profile from Firestore
+  const refreshProfile = async () => {
+    if (!user) return null;
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        const data = snap.data();
+        setUserProfile(data);
+        return data;
+      }
+    } catch (e) {
+      console.warn('Error refreshing profile:', e);
+    }
+    return userProfile;
+  };
+
+  // Instant Demo Mode (Internal development fallback only)
   const loginAsDemo = (demoRole = 'admin', name = 'Vishal', customEmail = 'vishal@galaxycomputers.in') => {
     const demoUser = {
       uid: 'demo-' + demoRole + '-101',
@@ -224,8 +249,9 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const isAdmin = userProfile?.role === 'admin' || !userProfile?.role;
+  const isAdmin = userProfile?.role === 'admin' || (!userProfile?.role && (user?.email === '63387siddhartha@gmail.com' || user?.email === 'siddhartha@gmail.com'));
   const isEmployee = userProfile?.role === 'employee' || isAdmin;
+  const isApproved = userProfile?.status === 'active';
 
   return (
     <AuthContext.Provider
@@ -236,8 +262,10 @@ export function AuthProvider({ children }) {
         authError,
         isAdmin,
         isEmployee,
+        isApproved,
         login,
         signup,
+        refreshProfile,
         loginAsDemo,
         logout,
       }}
