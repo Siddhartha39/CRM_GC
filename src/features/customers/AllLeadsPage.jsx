@@ -38,6 +38,7 @@ export function AllLeadsPage({ forcedCategory = null }) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(forcedCategory || searchParams.get('category') || 'All');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'All');
+  const [assignedFilter, setAssignedFilter] = useState('All');
   const [sortField, setSortField] = useState('createdAt');
   const [sortAsc, setSortAsc] = useState(false);
 
@@ -52,6 +53,7 @@ export function AllLeadsPage({ forcedCategory = null }) {
       const list = await getCustomers({
         category: forcedCategory || (categoryFilter === 'All' ? null : categoryFilter),
         status: statusFilter === 'All' ? null : statusFilter,
+        assignedTo: assignedFilter === 'Me' ? user?.email : null,
         search,
         limitCount: 100,
       });
@@ -68,7 +70,7 @@ export function AllLeadsPage({ forcedCategory = null }) {
       fetchLeads();
     }, 200);
     return () => clearTimeout(timer);
-  }, [categoryFilter, statusFilter, search, forcedCategory]);
+  }, [categoryFilter, statusFilter, assignedFilter, search, forcedCategory]);
 
   const toggleSort = (field) => {
     if (sortField === field) {
@@ -178,6 +180,16 @@ export function AllLeadsPage({ forcedCategory = null }) {
               { value: 'Converted', label: 'Converted' },
               { value: 'Lost', label: 'Lost' },
               { value: 'Do Not Contact', label: 'Do Not Contact' },
+            ]}
+          />
+
+          {/* Assigned Filter (My Leads vs All Leads) */}
+          <Select
+            value={assignedFilter}
+            onChange={(e) => setAssignedFilter(e.target.value)}
+            options={[
+              { value: 'All', label: '👥 All Store Leads' },
+              { value: 'Me', label: '👤 Assigned to Me' },
             ]}
           />
         </div>

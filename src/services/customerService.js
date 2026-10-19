@@ -244,8 +244,12 @@ export async function getCustomers({
   }
 }
 
-function filterAndSearchCustomers(list, { category, status, search }) {
+function filterAndSearchCustomers(list, { category, status, assignedTo, search }) {
   let results = [...list];
+
+  if (assignedTo && assignedTo !== 'All') {
+    results = results.filter(c => c.assignedTo === assignedTo || c.assignedToEmail === assignedTo);
+  }
 
   if (category && category !== 'All') {
     results = results.filter(c => c.leadCategory === category);

@@ -37,6 +37,7 @@ export function FollowUpsPage({ viewType = 'today' }) {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [upcomingDays, setUpcomingDays] = useState(7);
+  const [assignedFilter, setAssignedFilter] = useState('All');
 
   // Modals
   const [callingCustomer, setCallingCustomer] = useState(null);
@@ -99,6 +100,13 @@ export function FollowUpsPage({ viewType = 'today' }) {
     }
   };
 
+  const displayedTasks = tasks.filter((t) => {
+    if (assignedFilter === 'Me') {
+      return t.assignedTo === user?.email;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 pb-10">
       {/* Follow-up Sub Navigation Header */}
@@ -109,33 +117,59 @@ export function FollowUpsPage({ viewType = 'today' }) {
           </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-foreground tracking-tight">
-              {pageTitle} ({tasks.length})
+              {pageTitle} ({displayedTasks.length})
             </h2>
             <p className="text-sm font-body text-muted mt-0.5">{pageDesc}</p>
           </div>
         </div>
 
-        {/* View Switcher Inset Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-background shadow-neu-pressed rounded-2xl">
-          {[
-            { id: 'today', label: "Today", path: '/followups/today' },
-            { id: 'overdue', label: 'Overdue', path: '/followups/overdue' },
-            { id: 'upcoming', label: 'Upcoming', path: '/followups/upcoming' },
-            { id: 'completed', label: 'Completed', path: '/followups/completed' },
-            { id: 'calendar', label: 'Calendar View', path: '/followups/calendar' },
-          ].map((tab) => (
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Assignment Filter Switcher */}
+          <div className="flex items-center gap-1 p-1 bg-background shadow-neu-pressed rounded-xl">
             <button
-              key={tab.id}
-              onClick={() => navigate(tab.path)}
-              className={`px-3.5 py-1.5 text-xs font-display font-semibold rounded-xl transition-all duration-300 ${
-                location.pathname === tab.path
+              onClick={() => setAssignedFilter('All')}
+              className={`px-3 py-1 text-xs font-display font-semibold rounded-lg transition-all ${
+                assignedFilter === 'All'
                   ? 'bg-background shadow-neu-flat text-accent font-bold'
-                  : 'text-muted hover:text-foreground hover:shadow-neu-flat-sm'
+                  : 'text-muted hover:text-foreground'
               }`}
             >
-              {tab.label}
+              👥 All
             </button>
-          ))}
+            <button
+              onClick={() => setAssignedFilter('Me')}
+              className={`px-3 py-1 text-xs font-display font-semibold rounded-lg transition-all ${
+                assignedFilter === 'Me'
+                  ? 'bg-background shadow-neu-flat text-accent font-bold'
+                  : 'text-muted hover:text-foreground'
+              }`}
+            >
+              👤 Assigned to Me
+            </button>
+          </div>
+
+          {/* View Switcher Inset Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-background shadow-neu-pressed rounded-2xl">
+            {[
+              { id: 'today', label: "Today", path: '/followups/today' },
+              { id: 'overdue', label: 'Overdue', path: '/followups/overdue' },
+              { id: 'upcoming', label: 'Upcoming', path: '/followups/upcoming' },
+              { id: 'completed', label: 'Completed', path: '/followups/completed' },
+              { id: 'calendar', label: 'Calendar View', path: '/followups/calendar' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => navigate(tab.path)}
+                className={`px-3.5 py-1.5 text-xs font-display font-semibold rounded-xl transition-all duration-300 ${
+                  location.pathname === tab.path
+                    ? 'bg-background shadow-neu-flat text-accent font-bold'
+                    : 'text-muted hover:text-foreground hover:shadow-neu-flat-sm'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -172,7 +206,7 @@ export function FollowUpsPage({ viewType = 'today' }) {
           <div className="py-6">
             <LoadingSkeleton count={4} height="h-16" />
           </div>
-        ) : tasks.length === 0 ? (
+        ) : displayedTasks.length === 0 ? (
           <EmptyState
             title={`No ${viewType} follow-ups`}
             description={
@@ -200,7 +234,7 @@ export function FollowUpsPage({ viewType = 'today' }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-muted/10">
-                {tasks.map((task) => {
+                {displayedTasks.map((task) => {
                   const overdue = isOverdueDate(task.dueDate) && task.status === 'Pending';
                   return (
                     <tr
