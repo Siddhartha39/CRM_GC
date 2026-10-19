@@ -19,13 +19,14 @@ export function App() {
           position="top-right"
           toastOptions={{
             style: {
-              background: '#ffffff',
-              color: '#2d2d2d',
-              border: '2px solid #2d2d2d',
-              boxShadow: '4px 4px 0 #2d2d2d',
-              borderRadius: '10px',
-              fontFamily: 'Patrick Hand, cursive, sans-serif',
-              fontSize: '1rem',
+              background: '#E0E5EC',
+              color: '#3D4852',
+              border: 'none',
+              boxShadow: '6px 6px 16px rgba(163, 177, 198, 0.6), -6px -6px 16px rgba(255, 255, 255, 0.8)',
+              borderRadius: '20px',
+              fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
+              fontSize: '0.875rem',
+              fontWeight: '600',
             },
           }}
         />

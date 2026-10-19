@@ -48,7 +48,7 @@ export function AppLayout() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-paper-dots flex">
+    <div className="min-h-screen bg-background text-foreground flex antialiased">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <Sidebar

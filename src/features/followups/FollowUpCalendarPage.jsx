@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { LeadCategoryBadge } from '../../components/ui/Badge';
 import { CallModal } from '../calls/CallModal';
@@ -15,9 +14,12 @@ import {
   ChevronRight,
   Phone,
   Clock,
-  CheckCircle,
 } from 'lucide-react';
 
+/**
+ * Neumorphic Soft UI Follow-Up Calendar
+ * Monthly calendar grid with tactile day tiles, call density indicators, and selected date task queues.
+ */
 export function FollowUpCalendarPage() {
   const navigate = useNavigate();
   const todayStr = getKolkataTodayString();
@@ -97,29 +99,29 @@ export function FollowUpCalendarPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Calendar Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-paper-white card-hand border-2 border-border">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-sticky-yellow border-2 border-border rounded-lg shadow-hand-sm">
-            <Calendar className="w-6 h-6 text-foreground stroke-[2]" />
+    <div className="space-y-6 pb-10">
+      {/* Calendar Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 p-6 sm:p-8 bg-background shadow-neu-flat rounded-[32px]">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-background shadow-neu-pressed flex items-center justify-center text-accent shrink-0">
+            <Calendar className="w-6 h-6 stroke-[2]" />
           </div>
           <div>
-            <h2 className="text-2xl font-heading font-bold text-foreground">
-              Follow-Up Calendar — {monthNames[currentMonth]} {currentYear}
+            <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-foreground tracking-tight">
+              {monthNames[currentMonth]} {currentYear}
             </h2>
-            <p className="text-sm font-body text-foreground/70">
-              Click any calendar day to inspect and manage its scheduled follow-up queue
+            <p className="text-sm font-body text-muted">
+              Monthly follow-up scheduling and density overview
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="muted" size="sm" onClick={handlePrevMonth}>
-            <ChevronLeft className="w-4 h-4" /> Prev
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="sm" icon={ChevronLeft} onClick={handlePrevMonth}>
+            Prev
           </Button>
           <Button
-            variant="secondary"
+            variant="muted"
             size="sm"
             onClick={() => {
               setCurrentYear(todayYear);
@@ -129,19 +131,19 @@ export function FollowUpCalendarPage() {
           >
             Today
           </Button>
-          <Button variant="muted" size="sm" onClick={handleNextMonth}>
-            Next <ChevronRight className="w-4 h-4" />
+          <Button variant="secondary" size="sm" onClick={handleNextMonth}>
+            Next <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </div>
       </div>
 
       {/* Grid and Day List Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left 2 Cols: Monthly Grid */}
         <div className="lg:col-span-2">
-          <Card className="border-2 border-border p-4">
+          <div className="p-6 bg-background shadow-neu-flat rounded-[32px]">
             {/* Weekday headers */}
-            <div className="grid grid-cols-7 gap-1 text-center font-heading font-bold text-sm text-foreground/70 pb-2 border-b-2 border-border/30 mb-2">
+            <div className="grid grid-cols-7 gap-2 text-center font-display font-bold text-xs uppercase tracking-wider text-muted pb-3 mb-3 border-b border-muted/20">
               <span>Mon</span>
               <span>Tue</span>
               <span>Wed</span>
@@ -152,7 +154,7 @@ export function FollowUpCalendarPage() {
             </div>
 
             {/* Days grid */}
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-2.5">
               {calendarDays.map((day) => {
                 const countInfo = monthCounts[day.dateString];
                 const total = countInfo ? countInfo.total : 0;
@@ -163,32 +165,32 @@ export function FollowUpCalendarPage() {
                   <div
                     key={day.dateString}
                     onClick={() => loadDateTasks(day.dateString)}
-                    className={`min-h-[70px] p-1.5 rounded-lg border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                    className={`min-h-[76px] p-2.5 rounded-2xl cursor-pointer transition-all duration-300 flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-sticky-yellow border-border shadow-hand-sm font-bold'
+                        ? 'shadow-neu-pressed bg-background ring-2 ring-accent'
                         : day.isToday
-                        ? 'bg-emerald-50 border-emerald-600'
+                        ? 'shadow-neu-flat-sm bg-background font-bold text-accent'
                         : day.isCurrentMonth
-                        ? 'bg-paper-white border-border/40 hover:bg-stone-50'
-                        : 'bg-stone-100/50 border-transparent text-foreground/40'
+                        ? 'shadow-neu-flat-sm hover:shadow-neu-flat bg-background text-foreground'
+                        : 'opacity-40 bg-background'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-heading font-bold ${day.isToday ? 'text-emerald-700 font-extrabold' : ''}`}>
+                      <span className={`text-xs font-display font-bold ${isSelected ? 'text-accent' : ''}`}>
                         {day.dayNumber}
                       </span>
                       {day.isToday && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                       )}
                     </div>
 
                     {total > 0 && (
-                      <div className="mt-1 flex flex-col gap-0.5">
-                        <span className="text-[10px] font-body bg-secondary-accent text-white px-1 py-0.2 rounded text-center truncate">
+                      <div className="mt-1 flex flex-col gap-1">
+                        <span className="text-[10px] font-display font-semibold bg-accent text-white px-1.5 py-0.5 rounded-md text-center truncate shadow-sm">
                           {total} call{total > 1 ? 's' : ''}
                         </span>
                         {pending > 0 && (
-                          <span className="text-[9px] font-bold text-amber-800 text-center">
+                          <span className="text-[9px] font-bold text-amber-600 text-center">
                             {pending} pending
                           </span>
                         )}
@@ -198,91 +200,82 @@ export function FollowUpCalendarPage() {
                 );
               })}
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Right Col: Selected Date Follow-Up Queue */}
         <div>
-          <Card className="border-2 border-border p-4 space-y-3" tape={true}>
-            <div className="border-b-2 border-dashed border-border/40 pb-2">
-              <span className="text-xs text-foreground/60 font-body block">Selected Date Queue</span>
-              <h3 className="text-xl font-heading font-bold text-foreground">
+          <div className="p-6 bg-background shadow-neu-flat rounded-[32px] space-y-4">
+            <div className="pb-3 border-b border-muted/20">
+              <span className="text-xs font-display font-bold uppercase tracking-wider text-muted block">Selected Date Queue</span>
+              <h3 className="text-xl font-display font-extrabold text-foreground tracking-tight mt-0.5">
                 {formatKolkataDate(selectedDate)}
               </h3>
             </div>
 
             {loadingTasks ? (
-              <div className="py-8 text-center text-xs font-body text-foreground/60">
+              <div className="py-8 text-center text-xs font-body text-muted">
                 Loading calls for {selectedDate}...
               </div>
             ) : selectedDateTasks.length === 0 ? (
-              <div className="py-8 text-center text-sm font-body text-foreground/60">
+              <div className="py-8 text-center text-sm font-body text-muted">
                 No follow-up calls scheduled on this date.
               </div>
             ) : (
-              <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
                 {selectedDateTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-3 bg-stone-50 border-2 border-border rounded-lg text-xs font-body space-y-1.5"
+                    className="p-4 bg-background shadow-neu-flat-sm rounded-2xl space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span
-                        onClick={() => task.customerId && navigate(`/leads/${task.customerId}`)}
-                        className="font-heading font-bold text-sm text-secondary-accent hover:underline cursor-pointer"
-                      >
+                      <span className="font-display font-bold text-sm text-foreground">
                         {task.customerNameSnapshot}
                       </span>
                       <LeadCategoryBadge category={task.leadCategory} size="sm" />
                     </div>
 
-                    <div className="text-foreground/80">
+                    <div className="text-xs text-muted">
                       📞 {task.customerPhoneSnapshot}
                     </div>
 
                     {task.purpose && (
-                      <div className="bg-white p-1.5 rounded border border-border/40 font-medium">
+                      <div className="text-xs text-foreground/80 font-medium bg-background shadow-neu-pressed-sm px-2.5 py-1 rounded-xl">
                         🎯 {task.purpose}
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className={`font-bold ${task.status === 'Completed' ? 'text-emerald-700' : 'text-amber-800'}`}>
-                        {task.status}
-                      </span>
-                      {task.status === 'Pending' && (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() =>
-                              setCallingCustomer({
-                                id: task.customerId,
-                                customerId: task.customerCustomId,
-                                fullName: task.customerNameSnapshot,
-                                phone: task.customerPhoneSnapshot,
-                                leadCategory: task.leadCategory,
-                                requirement: task.requirement,
-                              })
-                            }
-                          >
-                            Call
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="muted"
-                            onClick={() => setReschedulingTask(task)}
-                          >
-                            Reschedule
-                          </Button>
-                        </div>
-                      )}
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={Phone}
+                        onClick={() =>
+                          setCallingCustomer({
+                            id: task.customerId,
+                            customerId: task.customerCustomId,
+                            fullName: task.customerNameSnapshot,
+                            phone: task.customerPhoneSnapshot,
+                            leadCategory: task.leadCategory,
+                            requirement: task.requirement,
+                          })
+                        }
+                      >
+                        Call
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setReschedulingTask(task)}
+                      >
+                        Reschedule
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </Card>
+          </div>
         </div>
       </div>
 
@@ -291,10 +284,7 @@ export function FollowUpCalendarPage() {
         isOpen={Boolean(callingCustomer)}
         onClose={() => setCallingCustomer(null)}
         customer={callingCustomer}
-        onCallLogged={() => {
-          loadMonthData();
-          if (selectedDate) loadDateTasks(selectedDate);
-        }}
+        onCallLogged={() => loadDateTasks(selectedDate)}
       />
 
       <RescheduleModal
@@ -302,8 +292,8 @@ export function FollowUpCalendarPage() {
         onClose={() => setReschedulingTask(null)}
         followUp={reschedulingTask}
         onRescheduled={() => {
+          loadDateTasks(selectedDate);
           loadMonthData();
-          if (selectedDate) loadDateTasks(selectedDate);
         }}
       />
     </div>

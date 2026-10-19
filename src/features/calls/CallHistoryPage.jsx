@@ -1,24 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Input';
 import { LeadCategoryBadge } from '../../components/ui/Badge';
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { formatKolkataDateTime, formatKolkataDate } from '../../utils/dates';
+import { formatKolkataDateTime } from '../../utils/dates';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import {
   PhoneCall,
   Search,
-  Filter,
   Eye,
-  Calendar,
-  Clock,
-  User,
 } from 'lucide-react';
 
+/**
+ * Neumorphic Soft UI Call History Audit Page
+ */
 export function CallHistoryPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -38,7 +36,6 @@ export function CallHistoryPage() {
       setCallLogs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) {
       console.error('Error fetching call logs:', e);
-      // Fallback if index is not ready
       try {
         const snap = await getDocs(query(collection(db, 'callLogs'), limit(200)));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -70,39 +67,39 @@ export function CallHistoryPage() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 pb-10">
       {/* Header */}
-      <div className="p-4 bg-paper-white card-hand border-2 border-border flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-sticky-yellow border-2 border-border rounded-lg shadow-hand-sm">
-            <PhoneCall className="w-6 h-6 text-foreground stroke-[2]" />
+      <div className="p-6 sm:p-8 bg-background shadow-neu-flat rounded-[32px] flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-background shadow-neu-pressed flex items-center justify-center text-accent shrink-0">
+            <PhoneCall className="w-6 h-6 stroke-[2]" />
           </div>
           <div>
-            <h2 className="text-2xl font-heading font-bold text-foreground">
+            <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-foreground tracking-tight">
               Master Calling History ({filteredLogs.length})
             </h2>
-            <p className="text-sm font-body text-foreground/70">
+            <p className="text-sm font-body text-muted">
               Complete permanent audit trail of phone calls, outcomes, and customer feedbacks
             </p>
           </div>
         </div>
 
-        <Button variant="muted" size="sm" onClick={fetchCallLogs}>
+        <Button variant="muted" size="md" onClick={fetchCallLogs}>
           Refresh Logs
         </Button>
       </div>
 
       {/* Filter and Search */}
-      <Card className="border-2 border-border p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="p-6 bg-background shadow-neu-flat rounded-[32px]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-2 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
             <input
               type="text"
               placeholder="Search by customer name, phone, employee, or feedback keyword..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input-hand w-full pl-9 text-sm"
+              className="w-full bg-background text-foreground shadow-neu-pressed rounded-2xl pl-10 pr-4 py-2.5 text-sm font-body border-0 outline-none transition-all placeholder:text-muted/60 focus:shadow-neu-pressed-deep focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
             />
           </div>
 
@@ -122,29 +119,27 @@ export function CallHistoryPage() {
             ]}
           />
         </div>
-      </Card>
+      </div>
 
       {/* Table */}
-      <Card className="border-2 border-border p-0 overflow-hidden">
+      <div className="p-6 bg-background shadow-neu-flat rounded-[32px] overflow-hidden">
         {loading ? (
-          <div className="p-6">
+          <div className="py-6">
             <LoadingSkeleton count={5} height="h-16" />
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              title="No call logs found"
-              description="No calling history records match your search or filter."
-              actionText="View Leads to Call"
-              onAction={() => navigate('/leads')}
-              icon={PhoneCall}
-            />
-          </div>
+          <EmptyState
+            title="No call logs found"
+            description="No calling history records match your search or filter."
+            actionText="View Leads to Call"
+            onAction={() => navigate('/leads')}
+            icon={PhoneCall}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm font-body">
-              <thead className="bg-stone-100 border-b-2 border-border text-xs font-heading font-bold text-foreground">
-                <tr>
+              <thead>
+                <tr className="border-b border-muted/20 text-xs font-display font-bold uppercase tracking-wider text-muted">
                   <th className="py-3 px-4">Date & Time</th>
                   <th className="py-3 px-4">Customer</th>
                   <th className="py-3 px-4">Call Outcome</th>
@@ -155,55 +150,55 @@ export function CallHistoryPage() {
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/20 bg-paper-white">
+              <tbody className="divide-y divide-muted/10">
                 {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="py-3 px-4 text-xs font-mono">
+                  <tr key={log.id} className="hover:bg-muted/10 transition-colors">
+                    <td className="py-3.5 px-4 text-xs font-mono text-muted">
                       {formatKolkataDateTime(log.callAt || log.createdAt)}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       <div
                         onClick={() => log.customerId && navigate(`/leads/${log.customerId}`)}
-                        className="font-heading font-bold text-base text-secondary-accent hover:underline cursor-pointer"
+                        className="font-display font-bold text-base text-foreground hover:text-accent cursor-pointer transition-colors"
                       >
                         {log.customerNameSnapshot}
                       </div>
-                      <div className="font-mono text-xs text-foreground/70">
+                      <div className="font-mono text-xs text-muted">
                         {log.customerPhoneSnapshot}
                       </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <span className="font-heading font-bold text-xs bg-stone-100 border border-border px-2 py-0.5 rounded">
+                    <td className="py-3.5 px-4">
+                      <span className="font-display font-bold text-xs bg-background shadow-neu-pressed-sm px-2.5 py-1 rounded-lg text-foreground">
                         {log.callOutcome}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-xs font-mono">
+                    <td className="py-3.5 px-4 text-xs font-mono text-muted">
                       {log.callDuration || '—'}
                     </td>
-                    <td className="py-3 px-4 max-w-xs">
+                    <td className="py-3.5 px-4 max-w-xs">
                       {log.feedback ? (
-                        <div className="text-xs italic text-foreground truncate">
+                        <div className="text-xs italic text-foreground/80 truncate">
                           "{log.feedback}"
                         </div>
                       ) : (
-                        <span className="text-foreground/40">—</span>
+                        <span className="text-muted/40">—</span>
                       )}
                       {log.nextAction && (
-                        <div className="text-[11px] text-secondary-accent font-bold mt-0.5">
+                        <div className="text-[11px] text-accent font-semibold mt-0.5">
                           Next: {log.nextAction}
                         </div>
                       )}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       <LeadCategoryBadge category={log.newLeadCategory || log.previousLeadCategory} size="sm" />
                     </td>
-                    <td className="py-3 px-4 text-xs text-foreground/80">
+                    <td className="py-3.5 px-4 text-xs text-muted">
                       {log.employeeName || log.employeeEmail}
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <button
                         onClick={() => log.customerId && navigate(`/leads/${log.customerId}`)}
-                        className="p-1.5 rounded border border-border/50 hover:bg-stone-100 text-foreground transition-colors"
+                        className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground transition-all"
                         title="View Profile"
                       >
                         <Eye className="w-4 h-4" />
@@ -215,7 +210,7 @@ export function CallHistoryPage() {
             </table>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

@@ -1,62 +1,63 @@
 import React from 'react';
 
+/**
+ * Neumorphic Soft UI Badges
+ * Molded tactile pills with smooth inset or flat shadow depth and no harsh borders.
+ */
 export function LeadCategoryBadge({ category, size = 'md' }) {
-  let styleClass = 'badge-cold';
-  let label = category || 'Cold';
+  const normCategory = category || 'Cold';
 
-  if (category === 'Hot') {
-    styleClass = 'badge-hot';
-  } else if (category === 'Warm') {
-    styleClass = 'badge-warm';
-  } else if (category === 'Cold') {
-    styleClass = 'badge-cold';
-  }
+  const categoryConfig = {
+    Hot: {
+      dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]',
+      text: 'text-red-600',
+      label: '🔥 Hot Lead',
+    },
+    Warm: {
+      dot: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]',
+      text: 'text-amber-700',
+      label: '⚡ Warm Lead',
+    },
+    Cold: {
+      dot: 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]',
+      text: 'text-blue-600',
+      label: '❄️ Cold Lead',
+    },
+  };
 
-  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm';
+  const config = categoryConfig[normCategory] || categoryConfig.Cold;
+  const sizeClass = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-xs sm:text-sm';
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-heading font-bold rounded-full border-2 ${styleClass} ${sizeClass}`}
+      className={`inline-flex items-center gap-2 font-display font-bold rounded-full bg-background shadow-neu-pressed-sm ${config.text} ${sizeClass}`}
     >
-      <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-      {label} Lead
+      <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+      <span>{config.label}</span>
     </span>
   );
 }
 
 export function LeadStatusBadge({ status, size = 'md' }) {
-  let colorStyles = 'bg-gray-100 text-gray-800 border-gray-400';
+  const normStatus = status || 'New';
 
-  switch (status) {
-    case 'New':
-      colorStyles = 'bg-blue-50 text-blue-700 border-blue-400';
-      break;
-    case 'Contacted':
-      colorStyles = 'bg-purple-50 text-purple-700 border-purple-400';
-      break;
-    case 'Follow-up':
-      colorStyles = 'bg-amber-50 text-amber-800 border-amber-400';
-      break;
-    case 'Converted':
-      colorStyles = 'bg-emerald-50 text-emerald-800 border-emerald-500 font-bold';
-      break;
-    case 'Lost':
-      colorStyles = 'bg-stone-100 text-stone-600 border-stone-400 line-through';
-      break;
-    case 'Do Not Contact':
-      colorStyles = 'bg-red-50 text-red-700 border-red-500 font-bold';
-      break;
-    default:
-      colorStyles = 'bg-gray-100 text-gray-800 border-gray-400';
-  }
+  const statusConfig = {
+    New: 'text-accent shadow-neu-pressed-sm',
+    Contacted: 'text-secondary-accent shadow-neu-pressed-sm',
+    'Follow-up': 'text-amber-600 shadow-neu-pressed-sm',
+    Converted: 'text-emerald-600 font-bold shadow-neu-flat-sm',
+    Lost: 'text-muted line-through opacity-75 shadow-neu-pressed-sm',
+    'Do Not Contact': 'text-danger font-bold shadow-neu-pressed-sm',
+  };
 
-  const sizeClass = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs sm:text-sm';
+  const statusStyle = statusConfig[normStatus] || 'text-foreground shadow-neu-pressed-sm';
+  const sizeClass = size === 'sm' ? 'px-2.5 py-0.5 text-xs' : 'px-3 py-1 text-xs sm:text-sm';
 
   return (
     <span
-      className={`inline-flex items-center font-body border-2 border-dashed rounded-md ${colorStyles} ${sizeClass}`}
+      className={`inline-flex items-center font-body font-semibold rounded-xl bg-background ${statusStyle} ${sizeClass}`}
     >
-      {status || 'New'}
+      {normStatus}
     </span>
   );
 }
@@ -64,21 +65,23 @@ export function LeadStatusBadge({ status, size = 'md' }) {
 export function FollowUpStatusBadge({ status }) {
   if (status === 'Completed') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-600 px-2.5 py-0.5 rounded-full">
-        ✓ Done
+      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-background shadow-neu-flat-sm px-3 py-1 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        Done
       </span>
     );
   }
   if (status === 'Cancelled') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-stone-500 bg-stone-100 border border-stone-400 px-2 py-0.5 rounded-full line-through">
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted bg-background shadow-neu-pressed-sm px-2.5 py-1 rounded-full line-through opacity-75">
         Cancelled
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-600 px-2.5 py-0.5 rounded-full">
-      ⏳ Pending
+    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-background shadow-neu-pressed-sm px-3 py-1 rounded-full">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+      Pending
     </span>
   );
 }

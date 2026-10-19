@@ -3,10 +3,10 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input, Select, Textarea } from '../../components/ui/Input';
 import { LeadCategoryBadge } from '../../components/ui/Badge';
-import { formatKolkataDate, getQuickScheduleDate, getKolkataTodayString } from '../../utils/dates';
+import { getQuickScheduleDate, getKolkataTodayString } from '../../utils/dates';
 import { logCall } from '../../services/callService';
 import { useAuth } from '../../context/AuthContext';
-import { Phone, Clock, Calendar, CheckCircle, AlertOctagon } from 'lucide-react';
+import { Phone, CheckCircle, AlertOctagon } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CALL_OUTCOMES = [
@@ -20,6 +20,9 @@ const CALL_OUTCOMES = [
   'Wrong Number',
 ];
 
+/**
+ * Neumorphic Soft UI Call Logging Modal
+ */
 export function CallModal({
   isOpen,
   onClose,
@@ -48,13 +51,11 @@ export function CallModal({
       setFeedback('');
       setNextAction('');
       setNotes('');
-      // Default follow up suggestion: tomorrow
       setNextFollowUpDate(getQuickScheduleDate('tomorrow'));
       setErrors({});
     }
   }, [customer, isOpen]);
 
-  // Adjust defaults when call outcome changes
   const handleOutcomeChange = (outcome) => {
     setCallOutcome(outcome);
     if (outcome === 'Converted / Sale Completed') {
@@ -63,7 +64,6 @@ export function CallModal({
     } else if (outcome === 'Not Interested' || outcome === 'Wrong Number') {
       setNewCategory('Cold');
     } else if (outcome === 'No Answer' || outcome === 'Busy') {
-      // Suggest tomorrow for callback
       setNextFollowUpDate(getQuickScheduleDate('tomorrow'));
     }
   };
@@ -98,21 +98,23 @@ export function CallModal({
         callOutcome,
         callDuration,
         feedback: feedback.trim() || `Call outcome recorded: ${callOutcome}`,
-        previousLeadCategory: customer.leadCategory || 'Cold',
+        previousLeadCategory: customer.leadCategory,
         newLeadCategory: newCategory,
-        nextAction,
-        nextFollowUpDate: doNotContact ? null : (scheduleFollowUp ? nextFollowUpDate : (nextFollowUpDate || null)),
-        notes,
-        doNotContact,
-        user,
+        nextAction: nextAction.trim(),
+        nextFollowUpDate: (!doNotContact && scheduleFollowUp) ? nextFollowUpDate : null,
+        notes: notes.trim(),
+        employeeId: user?.uid || 'user-101',
+        employeeEmail: user?.email || 'admin@galaxycrm.local',
+        employeeName: user?.displayName || user?.email?.split('@')[0] || 'Executive',
+        markAsDoNotContact: doNotContact,
       });
 
-      toast.success(`Call logged successfully for ${customer.fullName}`);
+      toast.success(`Call with ${customer.fullName} logged permanently.`);
       if (onCallLogged) onCallLogged();
       onClose();
     } catch (err) {
       console.error('Failed to log call:', err);
-      toast.error(`Error saving call: ${err.message}`);
+      toast.error('Failed to log call: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -125,35 +127,37 @@ export function CallModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Log Customer Call"
-      subtitle={`Galaxy Computers — Calling Desk`}
+      subtitle="Galaxy Computers — Calling Desk"
       maxWidth="max-w-2xl"
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Customer Snapshot Banner */}
-        <div className="p-3.5 bg-paper-white card-hand border-2 border-border flex flex-wrap items-center justify-between gap-3 bg-paper-dots">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-heading font-bold text-lg text-foreground">
+        <div className="p-4 sm:p-5 bg-background shadow-neu-pressed-sm rounded-2xl flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <span className="font-display font-extrabold text-lg text-foreground">
                 {customer.fullName}
               </span>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded font-mono font-bold border border-border/50">
+              <span className="text-xs font-mono font-bold text-muted bg-background shadow-neu-pressed-sm px-2.5 py-0.5 rounded-lg">
                 {customer.customerId || 'GC-CUST'}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-foreground/80 mt-1">
-              <Phone className="w-3.5 h-3.5 text-secondary-accent" />
-              <a href={`tel:${customer.phone}`} className="hover:underline font-bold text-secondary-accent">
-                {customer.phone}
-              </a>
+            <div className="flex items-center gap-3 text-sm text-muted">
+              <span className="flex items-center gap-1.5 font-bold text-accent">
+                <Phone className="w-3.5 h-3.5" />
+                <a href={`tel:${customer.phone}`} className="hover:underline">
+                  {customer.phone}
+                </a>
+              </span>
               {customer.requirement && (
-                <span className="text-xs text-foreground/60 italic truncate max-w-xs">
+                <span className="text-xs truncate max-w-xs text-foreground/70">
                   • {customer.requirement}
                 </span>
               )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="text-xs text-foreground/60">Current Category:</div>
+            <span className="text-xs font-display font-bold uppercase tracking-wider text-muted">Current Category</span>
             <LeadCategoryBadge category={customer.leadCategory} size="sm" />
           </div>
         </div>
@@ -191,18 +195,18 @@ export function CallModal({
         />
 
         {/* Lead Category After Call */}
-        <div className="p-3 bg-sticky-yellow border-2 border-border border-wobbly-md space-y-2">
-          <label className="font-heading font-bold text-sm text-foreground block">
+        <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl space-y-2.5">
+          <label className="font-display font-bold text-xs uppercase tracking-wider text-foreground/80 block">
             Update Lead Category After Call:
           </label>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5">
             {['Hot', 'Warm', 'Cold'].map((cat) => (
               <label
                 key={cat}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl cursor-pointer transition-all duration-300 ${
                   newCategory === cat
-                    ? 'border-border bg-white shadow-hand-sm font-bold'
-                    : 'border-transparent hover:bg-white/50'
+                    ? 'bg-background shadow-neu-pressed ring-2 ring-accent'
+                    : 'bg-background shadow-neu-flat-sm hover:shadow-neu-flat'
                 }`}
               >
                 <input
@@ -211,7 +215,7 @@ export function CallModal({
                   value={cat}
                   checked={newCategory === cat}
                   onChange={() => setNewCategory(cat)}
-                  className="accent-accent"
+                  className="sr-only"
                 />
                 <LeadCategoryBadge category={cat} size="sm" />
               </label>
@@ -221,14 +225,14 @@ export function CallModal({
 
         {/* Special Opt-out Handling for Not Interested */}
         {callOutcome === 'Not Interested' && (
-          <div className="p-3 bg-red-50 border-2 border-danger rounded-lg flex items-start gap-2.5">
+          <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl flex items-start gap-3 text-sm">
             <AlertOctagon className="w-5 h-5 text-danger shrink-0 mt-0.5" />
-            <label className="text-sm cursor-pointer select-none">
+            <label className="cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={doNotContact}
                 onChange={(e) => setDoNotContact(e.target.checked)}
-                className="mr-2 accent-danger"
+                className="mr-2 accent-accent"
               />
               <span className="font-bold text-danger">Do Not Contact:</span> Customer declined all future marketing and routine follow-ups.
             </label>
@@ -237,7 +241,7 @@ export function CallModal({
 
         {/* Next Action & Follow-up Scheduling */}
         {!doNotContact && (
-          <div className="space-y-3 p-3 bg-stone-50 border-2 border-border rounded-lg">
+          <div className="space-y-4 p-4 bg-background shadow-neu-pressed-sm rounded-2xl">
             <Input
               label="Next Action to Take"
               placeholder="e.g. Share quotation on WhatsApp, Check RAM stock, Arrange demo"
@@ -246,11 +250,11 @@ export function CallModal({
             />
 
             <div>
-              <label className="font-heading font-bold text-sm text-foreground block mb-1">
+              <label className="font-display font-bold text-xs uppercase tracking-wider text-foreground/80 block mb-2">
                 Schedule Next Follow-Up Date:
               </label>
               {/* Quick schedule buttons */}
-              <div className="flex flex-wrap gap-1.5 mb-2">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {[
                   { label: 'Tomorrow', key: 'tomorrow' },
                   { label: '+3 Days', key: '3days' },
@@ -263,7 +267,7 @@ export function CallModal({
                     key={item.key}
                     type="button"
                     onClick={() => handleQuickDate(item.key)}
-                    className="text-xs bg-white border border-border px-2 py-1 rounded shadow-hand-sm hover:bg-accent hover:text-white transition-colors"
+                    className="text-xs font-display font-semibold bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm px-3 py-1.5 rounded-xl text-foreground transition-all"
                   >
                     {item.label}
                   </button>
@@ -271,13 +275,13 @@ export function CallModal({
               </div>
               <input
                 type="date"
-                className="input-hand w-full text-base bg-white"
+                className="w-full bg-background text-foreground shadow-neu-pressed rounded-2xl px-4 py-2.5 text-sm font-body border-0 outline-none transition-all focus:shadow-neu-pressed-deep focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
                 min={getKolkataTodayString()}
                 value={nextFollowUpDate}
                 onChange={(e) => setNextFollowUpDate(e.target.value)}
               />
               {errors.nextFollowUpDate && (
-                <span className="text-xs text-danger font-medium mt-1 block">
+                <span className="text-xs text-danger font-medium mt-1.5 block">
                   ⚠ {errors.nextFollowUpDate}
                 </span>
               )}
@@ -294,7 +298,7 @@ export function CallModal({
         />
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t-2 border-dashed border-border/40">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-muted/20">
           <Button variant="muted" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

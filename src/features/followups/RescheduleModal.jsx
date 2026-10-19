@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { getQuickScheduleDate, getKolkataTodayString, formatKolkataDate } from '../../utils/dates';
 import { rescheduleFollowUp } from '../../services/followUpService';
 import { useAuth } from '../../context/AuthContext';
 import { Calendar, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * Neumorphic Soft UI Reschedule Modal
+ */
 export function RescheduleModal({
   isOpen,
   onClose,
@@ -54,64 +56,68 @@ export function RescheduleModal({
       subtitle={`Customer: ${followUp.customerNameSnapshot || 'Customer'}`}
       maxWidth="max-w-md"
     >
-      <div className="space-y-4">
-        <div className="p-3 bg-amber-50 border-2 border-amber-600 rounded-lg text-sm text-amber-900">
-          <div className="font-bold">Current Scheduled Date:</div>
-          <div className="text-base font-heading">
+      <div className="space-y-5">
+        <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl text-sm">
+          <div className="font-display font-bold text-xs uppercase tracking-wider text-muted">Current Scheduled Date:</div>
+          <div className="text-lg font-display font-bold text-foreground mt-0.5">
             {formatKolkataDate(followUp.dueDate)}
           </div>
           {followUp.purpose && (
-            <div className="text-xs text-amber-800 mt-1 italic">
+            <div className="text-xs text-muted mt-1 italic">
               Purpose: {followUp.purpose}
             </div>
           )}
         </div>
 
         <div>
-          <label className="font-heading font-bold text-sm text-foreground block mb-1.5">
+          <label className="font-display font-bold text-xs uppercase tracking-wider text-foreground/80 block mb-2">
             Quick Date Presets:
           </label>
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="flex flex-wrap gap-2 mb-3">
             {[
               { label: 'Tomorrow', key: 'tomorrow' },
               { label: '+3 Days', key: '3days' },
               { label: '+7 Days', key: '7days' },
               { label: '+15 Days', key: '15days' },
               { label: '+30 Days', key: '30days' },
-              { label: '+3 Months', key: '3months' },
-              { label: '+6 Months', key: '6months' },
             ].map((opt) => (
               <button
                 key={opt.key}
                 type="button"
                 onClick={() => handleQuickOption(opt.key)}
-                className="text-xs bg-white border border-border px-2 py-1 rounded shadow-hand-sm hover:bg-accent hover:text-white transition-colors"
+                className="px-3 py-1.5 text-xs font-display font-semibold rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm text-foreground transition-all"
               >
                 {opt.label}
               </button>
             ))}
           </div>
 
-          <label className="font-heading font-bold text-sm text-foreground block mb-1">
-            New Due Date:
+          <label className="font-display font-bold text-xs uppercase tracking-wider text-foreground/80 block mb-1.5">
+            Or Pick Exact Callback Date:
           </label>
           <input
             type="date"
-            className="input-hand w-full text-base bg-white"
+            className="w-full bg-background text-foreground shadow-neu-pressed rounded-2xl px-4 py-2.5 text-sm font-body border-0 outline-none transition-all focus:shadow-neu-pressed-deep focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
             min={getKolkataTodayString()}
             value={newDate}
             onChange={(e) => setNewDate(e.target.value)}
           />
         </div>
 
-        <Input
-          label="Reason for Rescheduling"
-          placeholder="e.g. Customer out of Kanpur, Salary on 1st, Waiting for festival discount"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
+        <div>
+          <label className="font-display font-bold text-xs uppercase tracking-wider text-foreground/80 block mb-1.5">
+            Reschedule Reason:
+          </label>
+          <input
+            type="text"
+            className="w-full bg-background text-foreground shadow-neu-pressed rounded-2xl px-4 py-2.5 text-sm font-body border-0 outline-none transition-all focus:shadow-neu-pressed-deep focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. Customer in meeting, asked to call back Saturday..."
+          />
+        </div>
 
-        <div className="flex justify-end gap-3 pt-3 border-t-2 border-dashed border-border/40">
+        <div className="flex justify-end gap-3 pt-4 border-t border-muted/20">
           <Button variant="muted" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
@@ -121,7 +127,7 @@ export function RescheduleModal({
             onClick={handleSave}
             disabled={loading}
           >
-            {loading ? 'Rescheduling...' : 'Confirm New Date'}
+            {loading ? 'Rescheduling...' : 'Confirm Reschedule'}
           </Button>
         </div>
       </div>

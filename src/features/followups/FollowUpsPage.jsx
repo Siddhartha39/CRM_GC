@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { LeadCategoryBadge, FollowUpStatusBadge } from '../../components/ui/Badge';
 import { LoadingSkeleton } from '../../components/ui/LoadingSkeleton';
@@ -14,21 +13,22 @@ import {
   getCompletedFollowUps,
   completeFollowUp,
 } from '../../services/followUpService';
-import { formatKolkataDate, getKolkataTodayString, isOverdueDate } from '../../utils/dates';
+import { formatKolkataDate, isOverdueDate } from '../../utils/dates';
 import { useAuth } from '../../context/AuthContext';
 import {
   CalendarCheck,
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
-  Calendar,
   Phone,
-  RefreshCw,
   Eye,
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * Neumorphic Soft UI Follow-Up Queue
+ */
 export function FollowUpsPage({ viewType = 'today' }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,13 +48,13 @@ export function FollowUpsPage({ viewType = 'today' }) {
   let pageDesc = 'Calls due today in Kanpur store';
 
   if (viewType === 'overdue') {
-    pageTitle = '⚠️ Overdue Follow-up Calls';
+    pageTitle = 'Overdue Follow-up Calls';
     pageIcon = AlertTriangle;
-    pageDesc = 'Incomplete tasks whose scheduled date has passed';
+    pageDesc = 'Incomplete tasks whose scheduled callback date has passed';
   } else if (viewType === 'upcoming') {
     pageTitle = 'Upcoming Follow-up Calls';
     pageIcon = CalendarClock;
-    pageDesc = 'Tasks scheduled for future callbacks';
+    pageDesc = 'Tasks scheduled for future customer callbacks';
   } else if (viewType === 'completed') {
     pageTitle = 'Completed Follow-up Tasks';
     pageIcon = CheckCircle2;
@@ -100,23 +100,23 @@ export function FollowUpsPage({ viewType = 'today' }) {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 pb-10">
       {/* Follow-up Sub Navigation Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-paper-white card-hand border-2 border-border">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-sticky-yellow border-2 border-border rounded-lg shadow-hand-sm">
-            <PageIcon className="w-6 h-6 text-foreground stroke-[2]" />
+      <div className="flex flex-wrap items-center justify-between gap-6 p-6 sm:p-8 bg-background shadow-neu-flat rounded-[32px]">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-background shadow-neu-pressed flex items-center justify-center text-accent shrink-0">
+            <PageIcon className="w-7 h-7 stroke-[2]" />
           </div>
           <div>
-            <h2 className="text-2xl font-heading font-bold text-foreground">
+            <h2 className="text-2xl sm:text-3xl font-display font-extrabold text-foreground tracking-tight">
               {pageTitle} ({tasks.length})
             </h2>
-            <p className="text-sm font-body text-foreground/70">{pageDesc}</p>
+            <p className="text-sm font-body text-muted mt-0.5">{pageDesc}</p>
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-stone-100 p-1 rounded-lg border border-border">
+        {/* View Switcher Inset Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-background shadow-neu-pressed rounded-2xl">
           {[
             { id: 'today', label: "Today", path: '/followups/today' },
             { id: 'overdue', label: 'Overdue', path: '/followups/overdue' },
@@ -127,10 +127,10 @@ export function FollowUpsPage({ viewType = 'today' }) {
             <button
               key={tab.id}
               onClick={() => navigate(tab.path)}
-              className={`px-3 py-1 text-xs font-heading font-bold rounded border transition-all ${
+              className={`px-3.5 py-1.5 text-xs font-display font-semibold rounded-xl transition-all duration-300 ${
                 location.pathname === tab.path
-                  ? 'bg-paper-white border-border shadow-hand-sm text-foreground'
-                  : 'border-transparent text-foreground/70 hover:text-foreground'
+                  ? 'bg-background shadow-neu-flat text-accent font-bold'
+                  : 'text-muted hover:text-foreground hover:shadow-neu-flat-sm'
               }`}
             >
               {tab.label}
@@ -141,124 +141,122 @@ export function FollowUpsPage({ viewType = 'today' }) {
 
       {/* Filter range for upcoming */}
       {viewType === 'upcoming' && (
-        <div className="flex items-center gap-2 p-3 bg-paper-white border-2 border-border rounded-lg text-sm font-body">
-          <span className="font-bold">Show upcoming calls in next:</span>
-          {[
-            { label: 'Next 7 Days', days: 7 },
-            { label: 'Next 15 Days', days: 15 },
-            { label: 'Next 30 Days', days: 30 },
-            { label: 'All Future', days: 365 },
-          ].map((opt) => (
-            <button
-              key={opt.days}
-              onClick={() => setUpcomingDays(opt.days)}
-              className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                upcomingDays === opt.days
-                  ? 'bg-secondary-accent text-white font-bold border-secondary-accent'
-                  : 'bg-stone-50 border-border/50 text-foreground'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-background shadow-neu-flat-sm rounded-2xl text-xs sm:text-sm font-body">
+          <span className="font-semibold text-foreground">Show upcoming calls in:</span>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Next 7 Days', days: 7 },
+              { label: 'Next 15 Days', days: 15 },
+              { label: 'Next 30 Days', days: 30 },
+              { label: 'All Future', days: 365 },
+            ].map((opt) => (
+              <button
+                key={opt.days}
+                onClick={() => setUpcomingDays(opt.days)}
+                className={`px-3 py-1.5 text-xs font-display font-semibold rounded-xl transition-all ${
+                  upcomingDays === opt.days
+                    ? 'bg-background shadow-neu-pressed text-accent font-bold'
+                    : 'bg-background shadow-neu-flat-sm text-muted hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Task List */}
-      <Card className="border-2 border-border p-0 overflow-hidden">
+      <div className="p-6 bg-background shadow-neu-flat rounded-[32px] overflow-hidden">
         {loading ? (
-          <div className="p-6">
+          <div className="py-6">
             <LoadingSkeleton count={4} height="h-16" />
           </div>
         ) : tasks.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              title={`No ${viewType} follow-ups`}
-              description={
-                viewType === 'today'
-                  ? 'Great job! You have completed all follow-up calls scheduled for today.'
-                  : viewType === 'overdue'
-                  ? 'No overdue calls pending! Your pipeline is clean.'
-                  : 'No tasks found in this follow-up queue.'
-              }
-              actionText={viewType !== 'today' ? "Go to Today's Follow-ups" : 'View Leads'}
-              onAction={() => navigate(viewType !== 'today' ? '/followups/today' : '/leads')}
-            />
-          </div>
+          <EmptyState
+            title={`No ${viewType} follow-ups`}
+            description={
+              viewType === 'today'
+                ? 'Great job! You have completed all follow-up calls scheduled for today.'
+                : viewType === 'overdue'
+                ? 'No overdue calls pending! Your pipeline is clean.'
+                : 'No tasks found in this follow-up queue.'
+            }
+            actionText={viewType !== 'today' ? "Go to Today's Follow-ups" : 'View Leads'}
+            onAction={() => navigate(viewType !== 'today' ? '/followups/today' : '/leads')}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm font-body">
-              <thead className="bg-stone-100 border-b-2 border-border text-xs font-heading font-bold text-foreground">
-                <tr>
+              <thead>
+                <tr className="border-b border-muted/20 text-xs font-display font-bold uppercase tracking-wider text-muted">
                   <th className="py-3 px-4">Customer</th>
                   <th className="py-3 px-4">Contact</th>
-                  <th className="py-3 px-4">Lead Category</th>
+                  <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Requirement / Purpose</th>
                   <th className="py-3 px-4">Due Date</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/20 bg-paper-white">
+              <tbody className="divide-y divide-muted/10">
                 {tasks.map((task) => {
                   const overdue = isOverdueDate(task.dueDate) && task.status === 'Pending';
                   return (
                     <tr
                       key={task.id}
-                      className={`hover:bg-stone-50 transition-colors ${
-                        overdue ? 'bg-red-50/30' : ''
-                      }`}
+                      className="hover:bg-muted/10 transition-colors"
                     >
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <div
                           onClick={() => task.customerId && navigate(`/leads/${task.customerId}`)}
-                          className="font-heading font-bold text-base text-secondary-accent hover:underline cursor-pointer"
+                          className="font-display font-bold text-base text-foreground hover:text-accent cursor-pointer transition-colors"
                         >
                           {task.customerNameSnapshot}
                         </div>
                         {task.customerCustomId && (
-                          <div className="font-mono text-[11px] text-foreground/60">
+                          <div className="font-mono text-[11px] text-muted">
                             {task.customerCustomId}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <a
                           href={`tel:${task.customerPhoneSnapshot}`}
-                          className="font-mono text-xs font-bold text-foreground hover:underline block"
+                          className="font-mono text-xs font-bold text-accent hover:underline block"
                         >
                           📞 {task.customerPhoneSnapshot}
                         </a>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <LeadCategoryBadge category={task.leadCategory} size="sm" />
                       </td>
-                      <td className="py-3 px-4 max-w-xs">
-                        <div className="font-bold text-xs text-foreground truncate">
+                      <td className="py-3.5 px-4 max-w-xs">
+                        <div className="font-semibold text-xs text-foreground truncate">
                           {task.purpose || 'Follow-up Call'}
                         </div>
                         {task.requirement && (
-                          <div className="text-xs text-foreground/60 truncate">
+                          <div className="text-xs text-muted truncate">
                             {task.requirement}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4 font-bold text-xs">
+                      <td className="py-3.5 px-4 font-bold text-xs">
                         <span
                           className={
                             overdue
-                              ? 'text-danger font-bold bg-red-100 px-2 py-0.5 rounded border border-danger/40'
+                              ? 'text-danger font-bold bg-background shadow-neu-pressed-sm px-2.5 py-1 rounded-lg'
                               : 'text-foreground'
                           }
                         >
                           {formatKolkataDate(task.dueDate)}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <FollowUpStatusBadge status={task.status} />
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           {task.status === 'Pending' && (
                             <>
                               <Button
@@ -280,23 +278,23 @@ export function FollowUpsPage({ viewType = 'today' }) {
                               </Button>
                               <Button
                                 size="sm"
-                                variant="muted"
+                                variant="secondary"
                                 onClick={() => setReschedulingTask(task)}
                               >
                                 Reschedule
                               </Button>
                               <button
                                 onClick={() => handleMarkComplete(task)}
-                                className="p-1.5 text-emerald-800 hover:bg-emerald-100 rounded border border-emerald-600 transition-colors"
+                                className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-emerald-600 transition-all"
                                 title="Mark Complete"
                               >
-                                <Check className="w-4 h-4" />
+                                <Check className="w-4 h-4 stroke-[2.5]" />
                               </button>
                             </>
                           )}
                           <button
                             onClick={() => task.customerId && navigate(`/leads/${task.customerId}`)}
-                            className="p-1.5 rounded border border-border/50 hover:bg-stone-100 text-foreground transition-colors"
+                            className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground transition-all"
                             title="View Profile"
                           >
                             <Eye className="w-4 h-4" />
@@ -310,7 +308,7 @@ export function FollowUpsPage({ viewType = 'today' }) {
             </table>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Modals */}
       <CallModal

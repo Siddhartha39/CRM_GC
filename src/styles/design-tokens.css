@@ -1,214 +1,273 @@
 :root {
-  --background: #fdfbf7;
-  --foreground: #2d2d2d;
-  --muted: #e5e0d8;
-  --accent: #ff4d4d;
-  --border: #2d2d2d;
-  --secondary-accent: #2d5da1;
-  --paper-white: #ffffff;
-  --sticky-yellow: #fff9c4;
-  --success: #2e7d32;
-  --warning: #a66a00;
-  --danger: #c62828;
+  /* Neumorphic (Soft UI) Cool Monochromatic Base */
+  --background: #E0E5EC;
+  --foreground: #3D4852;
+  --muted: #6B7280;
+  --accent: #6C63FF;
+  --accent-light: #8B84FF;
+  --accent-secondary: #38B2AC;
+  --border: transparent;
+  --paper-white: #E0E5EC;
+  --sticky-yellow: #E0E5EC;
+  --success: #38B2AC;
+  --warning: #D69E2E;
+  --danger: #E53E3E;
 
-  --wobbly: 255px 15px 225px 15px / 15px 225px 15px 255px;
-  --wobbly-md: 25px 8px 20px 10px / 10px 22px 8px 25px;
-  --wobbly-sm: 8px 4px 6px 3px / 4px 7px 3px 6px;
+  /* Neumorphic Corner Radii */
+  --radius-card: 32px;
+  --radius-btn: 16px;
+  --radius-inner: 12px;
 
-  --shadow-hand: 4px 4px 0 #2d2d2d;
-  --shadow-hand-lg: 8px 8px 0 #2d2d2d;
-  --shadow-hand-sm: 2px 2px 0 #2d2d2d;
-  --shadow-hand-active: 1px 1px 0 #2d2d2d;
+  /* Shadows (RGBA Opposing Light & Dark) */
+  --shadow-neu-flat: 9px 9px 16px rgb(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
+  --shadow-neu-flat-hover: 12px 12px 20px rgb(163, 177, 198, 0.7), -12px -12px 20px rgba(255, 255, 255, 0.6);
+  --shadow-neu-flat-sm: 5px 5px 10px rgb(163, 177, 198, 0.6), -5px -5px 10px rgba(255, 255, 255, 0.5);
+  --shadow-neu-pressed: inset 6px 6px 10px rgb(163, 177, 198, 0.6), inset -6px -6px 10px rgba(255, 255, 255, 0.5);
+  --shadow-neu-pressed-deep: inset 10px 10px 20px rgb(163, 177, 198, 0.7), inset -10px -10px 20px rgba(255, 255, 255, 0.6);
+  --shadow-neu-pressed-sm: inset 3px 3px 6px rgb(163, 177, 198, 0.6), inset -3px -3px 6px rgba(255, 255, 255, 0.5);
+  --shadow-neu-accent: 6px 6px 14px rgba(108, 99, 255, 0.4), -6px -6px 14px rgba(255, 255, 255, 0.6);
+  --shadow-neu-accent-pressed: inset 4px 4px 8px rgba(78, 70, 229, 0.6), inset -4px -4px 8px rgba(139, 132, 255, 0.4);
+
+  /* Legacy variable mappings for backward compatibility */
+  --shadow-hand: var(--shadow-neu-flat);
+  --shadow-hand-lg: var(--shadow-neu-flat-hover);
+  --shadow-hand-sm: var(--shadow-neu-flat-sm);
+  --shadow-hand-active: var(--shadow-neu-pressed-sm);
+  --wobbly: 32px;
+  --wobbly-md: 16px;
+  --wobbly-sm: 12px;
 }
 
-/* Dotted paper background pattern */
-.bg-paper-dots {
+/* ==========================================================================
+   NEUMORPHIC CORE UTILITIES
+   ========================================================================== */
+
+/* Extruded Surfaces */
+.neu-flat {
   background-color: var(--background);
-  background-image: radial-gradient(var(--muted) 1.2px, transparent 1.2px);
-  background-size: 24px 24px;
+  box-shadow: var(--shadow-neu-flat);
+  border-radius: var(--radius-card);
+  border: none !important;
+  transition: all 0.3s ease-out;
 }
 
-/* Ruled paper lines for notes/history */
-.bg-ruled-paper {
-  background-color: var(--paper-white);
-  background-image: linear-gradient(rgba(45, 93, 161, 0.08) 1px, transparent 1px);
-  background-size: 100% 28px;
-  line-height: 28px;
+.neu-flat:hover {
+  box-shadow: var(--shadow-neu-flat-hover);
+  transform: translateY(-2px);
 }
 
-/* Wobbly border helpers */
-.border-wobbly {
-  border-radius: var(--wobbly);
+.neu-flat-static {
+  background-color: var(--background);
+  box-shadow: var(--shadow-neu-flat);
+  border-radius: var(--radius-card);
+  border: none !important;
 }
 
-.border-wobbly-md {
-  border-radius: var(--wobbly-md);
+.neu-flat-sm {
+  background-color: var(--background);
+  box-shadow: var(--shadow-neu-flat-sm);
+  border-radius: var(--radius-btn);
+  border: none !important;
+  transition: all 0.3s ease-out;
 }
 
-.border-wobbly-sm {
-  border-radius: var(--wobbly-sm);
+/* Inset / Carved Wells */
+.neu-pressed {
+  background-color: var(--background);
+  box-shadow: var(--shadow-neu-pressed);
+  border-radius: var(--radius-btn);
+  border: none !important;
 }
 
-/* Hard offset shadows */
-.shadow-hand {
-  box-shadow: var(--shadow-hand);
+.neu-pressed-deep {
+  background-color: var(--background);
+  box-shadow: var(--shadow-neu-pressed-deep);
+  border-radius: var(--radius-btn);
+  border: none !important;
 }
 
-.shadow-hand-lg {
-  box-shadow: var(--shadow-hand-lg);
+.neu-pressed-sm {
+  background-color: var(--background);
+  box-shadow: var(--shadow-neu-pressed-sm);
+  border-radius: var(--radius-inner);
+  border: none !important;
 }
 
-.shadow-hand-sm {
-  box-shadow: var(--shadow-hand-sm);
+.neu-well {
+  background-color: var(--background);
+  box-shadow: var(--shadow-neu-pressed-deep);
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  transition: all 0.3s ease-out;
 }
 
-/* Hand-drawn button behavior */
-.btn-hand {
-  background-color: var(--paper-white);
+/* Neumorphic Interactive Buttons */
+.neu-btn {
+  background-color: var(--background);
   color: var(--foreground);
-  border: 2px solid var(--border);
-  box-shadow: var(--shadow-hand);
-  border-radius: var(--wobbly-md);
-  font-family: 'Patrick Hand', cursive, sans-serif;
-  font-size: 1.05rem;
+  box-shadow: var(--shadow-neu-flat);
+  border-radius: var(--radius-btn);
+  border: none !important;
+  padding: 0.65rem 1.4rem;
+  font-family: 'DM Sans', sans-serif;
   font-weight: 600;
-  transition: all 0.12s ease-in-out;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1.15rem;
   cursor: pointer;
   user-select: none;
+  transition: all 0.3s ease-out;
+}
+
+.neu-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-neu-flat-hover);
+  transform: translateY(-1px);
+  color: var(--accent);
+}
+
+.neu-btn:active:not(:disabled) {
+  box-shadow: var(--shadow-neu-pressed);
+  transform: translateY(0.5px);
+}
+
+.neu-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: var(--shadow-neu-pressed-sm);
+}
+
+/* Primary Accent Neumorphic Button */
+.neu-btn-primary {
+  background-color: var(--accent);
+  color: #ffffff;
+  box-shadow: var(--shadow-neu-accent);
+  border-radius: var(--radius-btn);
+  border: none !important;
+  padding: 0.65rem 1.4rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease-out;
+}
+
+.neu-btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-light);
+  box-shadow: 8px 8px 18px rgba(108, 99, 255, 0.5), -8px -8px 18px rgba(255, 255, 255, 0.7);
+  transform: translateY(-1px);
+}
+
+.neu-btn-primary:active:not(:disabled) {
+  box-shadow: var(--shadow-neu-accent-pressed);
+  transform: translateY(0.5px);
+}
+
+/* Neumorphic Input & Select */
+.neu-input {
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: var(--shadow-neu-pressed);
+  border-radius: var(--radius-btn);
+  border: none !important;
+  outline: none;
+  padding: 0.65rem 1.15rem;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.3s ease-out;
+}
+
+.neu-input:focus {
+  box-shadow: var(--shadow-neu-pressed-deep);
+  ring: 2px solid var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.neu-input::placeholder {
+  color: #9CA3AF;
+}
+
+/* ==========================================================================
+   LEGACY ADAPTERS (Graceful transition for all existing classes)
+   ========================================================================== */
+.card-hand,
+.card-hand-lg {
+  background-color: var(--background) !important;
+  box-shadow: var(--shadow-neu-flat) !important;
+  border-radius: var(--radius-card) !important;
+  border: none !important;
+}
+
+.card-hand-sm {
+  background-color: var(--background) !important;
+  box-shadow: var(--shadow-neu-flat-sm) !important;
+  border-radius: var(--radius-btn) !important;
+  border: none !important;
+}
+
+.btn-hand {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  box-shadow: var(--shadow-neu-flat) !important;
+  border-radius: var(--radius-btn) !important;
+  border: none !important;
+  font-family: 'DM Sans', sans-serif !important;
+  transition: all 0.3s ease-out !important;
 }
 
 .btn-hand:hover:not(:disabled) {
-  background-color: var(--accent);
-  color: #ffffff;
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 #2d2d2d;
+  box-shadow: var(--shadow-neu-flat-hover) !important;
+  transform: translateY(-1px) !important;
+  color: var(--accent) !important;
+  background-color: var(--background) !important;
 }
 
 .btn-hand:active:not(:disabled) {
-  transform: translate(3px, 3px);
-  box-shadow: var(--shadow-hand-active);
+  box-shadow: var(--shadow-neu-pressed) !important;
+  transform: translateY(0.5px) !important;
 }
 
-.btn-hand:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: 2px 2px 0 #888888;
-}
-
-/* Secondary Button (Blue ink) */
-.btn-hand-secondary {
-  background-color: #f0f4f9;
-  border-color: var(--secondary-accent);
-  color: var(--secondary-accent);
-}
-.btn-hand-secondary:hover:not(:disabled) {
-  background-color: var(--secondary-accent);
-  color: #ffffff;
-}
-
-/* Muted / Neutral Button */
-.btn-hand-muted {
-  background-color: #f7f5f0;
-  border-color: #666666;
-  color: #444444;
-}
-.btn-hand-muted:hover:not(:disabled) {
-  background-color: #555555;
-  color: #ffffff;
-}
-
-/* Sticky Yellow Button */
-.btn-hand-sticky {
-  background-color: var(--sticky-yellow);
-  color: #332200;
-  border-color: var(--border);
-}
-.btn-hand-sticky:hover:not(:disabled) {
-  background-color: #ffeb3b;
-  color: #222222;
-}
-
-/* Hand-drawn Card */
-.card-hand {
-  background-color: var(--paper-white);
-  border: 2px solid var(--border);
-  border-radius: var(--wobbly-md);
-  box-shadow: var(--shadow-hand);
-}
-
-.card-hand-lg {
-  background-color: var(--paper-white);
-  border: 2.5px solid var(--border);
-  border-radius: var(--wobbly);
-  box-shadow: var(--shadow-hand-lg);
-}
-
-/* Form input hand-drawn styling */
 .input-hand {
-  background-color: #ffffff;
-  border: 2px solid var(--border);
-  border-radius: var(--wobbly-md);
-  box-shadow: var(--shadow-hand-sm);
-  padding: 0.5rem 0.85rem;
-  font-family: 'Patrick Hand', cursive, sans-serif;
-  font-size: 1.05rem;
-  color: var(--foreground);
-  outline: none;
-  transition: all 0.15s ease-in-out;
+  background-color: var(--background) !important;
+  box-shadow: var(--shadow-neu-pressed) !important;
+  border-radius: var(--radius-btn) !important;
+  border: none !important;
+  color: var(--foreground) !important;
+  font-family: 'DM Sans', sans-serif !important;
 }
 
 .input-hand:focus {
-  border-color: var(--secondary-accent);
-  box-shadow: 3px 3px 0 var(--secondary-accent);
+  box-shadow: var(--shadow-neu-pressed-deep) !important;
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
 }
 
-/* Decorative Washi Tape effect */
-.washi-tape {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-1deg);
-  width: 90px;
-  height: 22px;
-  background-color: rgba(255, 249, 196, 0.85);
-  border-left: 2px dashed rgba(45, 45, 45, 0.4);
-  border-right: 2px dashed rgba(45, 45, 45, 0.4);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  pointer-events: none;
-  z-index: 10;
+/* Eliminate washi tapes and paper artifacts */
+.washi-tape,
+.thumbtack,
+.tape,
+.bg-paper-dots,
+.bg-ruled-paper {
+  display: none !important;
 }
 
-.washi-tape-blue {
-  background-color: rgba(186, 218, 255, 0.85);
+/* Floating animation for subtle tactile depth */
+@keyframes neuFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
-.washi-tape-red {
-  background-color: rgba(255, 205, 210, 0.85);
-}
-
-/* Hand-drawn status badges */
-.badge-hot {
-  background-color: #ffebee;
-  color: #c62828;
-  border: 2px solid #c62828;
-  box-shadow: 2px 2px 0 #c62828;
-}
-
-.badge-warm {
-  background-color: #fff8e1;
-  color: #a66a00;
-  border: 2px solid #a66a00;
-  box-shadow: 2px 2px 0 #a66a00;
-}
-
-.badge-cold {
-  background-color: #e3f2fd;
-  color: #1565c0;
-  border: 2px solid #1565c0;
-  box-shadow: 2px 2px 0 #1565c0;
+.animate-neu-float {
+  animation: neuFloat 3s ease-in-out infinite;
 }

@@ -8,6 +8,9 @@ import { useAuth } from '../../context/AuthContext';
 import { Save } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * Neumorphic Soft UI Edit Customer Modal
+ */
 export function EditCustomerModal({
   isOpen,
   onClose,
@@ -175,11 +178,11 @@ export function EditCustomerModal({
           onChange={(e) => handleChange('internalNotes', e.target.value)}
         />
 
-        <div className="flex justify-end gap-3 pt-3 border-t-2 border-dashed border-border/40">
+        <div className="flex justify-end gap-3 pt-4 border-t border-muted/20">
           <Button variant="muted" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button type="submit" icon={Save} disabled={loading}>
+          <Button type="submit" icon={Save} disabled={loading} variant="primary">
             {loading ? 'Saving Changes...' : 'Update Customer Record'}
           </Button>
         </div>

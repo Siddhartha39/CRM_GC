@@ -30,6 +30,9 @@ const SOURCES = [
   'Social Media',
 ];
 
+/**
+ * Neumorphic Soft UI Add Customer Modal
+ */
 export function AddCustomerModal({
   isOpen,
   onClose,
@@ -92,17 +95,16 @@ export function AddCustomerModal({
     const { isValid, errors: validationErrors } = validateCustomerForm(form);
     if (!isValid) {
       setErrors(validationErrors);
+      toast.error('Please resolve validation errors in the form.');
       return;
     }
 
     setLoading(true);
     try {
-      const newCust = await createCustomer(form, user);
-      toast.success(`Customer ${newCust.fullName} created with ID ${newCust.customerId}!`);
+      const created = await createCustomer(form, user);
+      toast.success(`Customer ${created.fullName} (${created.customerId}) added successfully!`);
       setForm(initialForm);
-      setDuplicateWarning(null);
-      if (onCustomerAdded) onCustomerAdded(newCust);
-      window.dispatchEvent(new CustomEvent('crm-customer-added'));
+      if (onCustomerAdded) onCustomerAdded(created);
       onClose();
     } catch (err) {
       console.error('Error adding customer:', err);
@@ -117,23 +119,23 @@ export function AddCustomerModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Add New Customer"
-      subtitle="Register customer in Galaxy Computers master database"
+      subtitle="Register customer into Galaxy Computers master database"
       maxWidth="max-w-3xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {duplicateWarning && (
-          <div className="p-3 bg-amber-50 border-2 border-amber-600 rounded-lg flex items-center gap-2 text-sm text-amber-900 font-bold">
-            <AlertCircle className="w-5 h-5 text-amber-700 shrink-0" />
+          <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl flex items-center gap-3 text-xs text-amber-600 font-medium">
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 stroke-[2]" />
             <span>{duplicateWarning}</span>
           </div>
         )}
 
-        {/* Basic Info */}
+        {/* Identity & Primary Phone */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Customer Full Name"
+            placeholder="e.g. Amit Kumar"
             required
-            placeholder="e.g. Rahul Sharma"
             value={form.fullName}
             onChange={(e) => handleChange('fullName', e.target.value)}
             error={errors.fullName}
@@ -141,8 +143,9 @@ export function AddCustomerModal({
 
           <Input
             label="Primary Mobile Phone"
+            placeholder="10-digit mobile number"
+            type="tel"
             required
-            placeholder="10-digit mobile, e.g. 9839012345"
             value={form.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
             onBlur={handlePhoneBlur}
@@ -221,7 +224,7 @@ export function AddCustomerModal({
         </div>
 
         {/* Lead Classification & Follow-up */}
-        <div className="p-4 bg-paper-dots border-2 border-border card-hand grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-5 bg-background shadow-neu-pressed-sm rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select
             label="Initial Lead Category"
             value={form.leadCategory}
@@ -240,13 +243,13 @@ export function AddCustomerModal({
             options={['New', 'Contacted', 'Follow-up', 'Converted', 'Lost', 'Do Not Contact']}
           />
 
-          <div>
-            <label className="font-heading font-bold text-sm text-foreground block mb-1">
+          <div className="flex flex-col gap-1.5">
+            <label className="font-display font-bold text-xs uppercase tracking-wider text-foreground/80">
               Initial Follow-Up Date:
             </label>
             <input
               type="date"
-              className="input-hand w-full text-base bg-white"
+              className="w-full bg-background text-foreground shadow-neu-pressed rounded-2xl px-4 py-2.5 text-sm font-body border-0 outline-none transition-all focus:shadow-neu-pressed-deep focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
               min={getKolkataTodayString()}
               value={form.nextFollowUpDate}
               onChange={(e) => handleChange('nextFollowUpDate', e.target.value)}
@@ -262,11 +265,11 @@ export function AddCustomerModal({
           onChange={(e) => handleChange('internalNotes', e.target.value)}
         />
 
-        <div className="flex justify-end gap-3 pt-3 border-t-2 border-dashed border-border/40">
+        <div className="flex justify-end gap-3 pt-4 border-t border-muted/20">
           <Button variant="muted" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button type="submit" icon={UserPlus} disabled={loading}>
+          <Button type="submit" icon={UserPlus} disabled={loading} variant="primary">
             {loading ? 'Creating Customer...' : 'Save Customer to Database'}
           </Button>
         </div>

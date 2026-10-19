@@ -3,6 +3,9 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 import { AlertTriangle } from 'lucide-react';
 
+/**
+ * Neumorphic Soft UI Confirm Dialog
+ */
 export function ConfirmDialog({
   isOpen,
   onClose,
@@ -16,10 +19,12 @@ export function ConfirmDialog({
 }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3 p-3 bg-sticky-yellow border-2 border-border border-wobbly-md">
-          <AlertTriangle className="w-8 h-8 text-accent shrink-0 stroke-[2.2]" />
-          <p className="text-base text-foreground font-body">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-4 p-4 bg-background shadow-neu-pressed-sm rounded-2xl">
+          <div className="w-12 h-12 rounded-full bg-background shadow-neu-pressed flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-6 h-6 text-warning stroke-[2]" />
+          </div>
+          <p className="text-sm text-foreground font-body leading-relaxed">
             {message}
           </p>
         </div>

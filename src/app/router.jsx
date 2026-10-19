@@ -21,9 +21,9 @@ function ProtectedRoute({ children }) {
   // If loading and no user yet, display brief skeleton
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-paper-dots flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-paper-white card-hand p-6">
-          <div className="text-center font-heading font-bold text-xl mb-4">
+      <div className="min-h-screen bg-[#E0E5EC] flex items-center justify-center p-6">
+        <div className="w-full max-w-md bg-[#E0E5EC] rounded-[32px] shadow-neu-flat p-8 border-0">
+          <div className="text-center font-heading font-extrabold text-2xl text-[#3D4852] mb-6">
             Galaxy Computers CRM
           </div>
           <LoadingSkeleton count={3} height="h-12" />

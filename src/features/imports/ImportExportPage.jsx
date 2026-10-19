@@ -222,16 +222,16 @@ export function ImportExportPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="p-4 bg-paper-white card-hand border-2 border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-sticky-yellow border-2 border-border rounded-lg shadow-hand-sm">
-            <FileSpreadsheet className="w-6 h-6 text-foreground stroke-[2]" />
+      <div className="bg-[#E0E5EC] rounded-[32px] p-6 shadow-neu-flat flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl shadow-neu-pressed flex items-center justify-center bg-[#E0E5EC] text-[#6C63FF]">
+            <FileSpreadsheet className="w-6 h-6 stroke-[2.2]" />
           </div>
           <div>
-            <h2 className="text-2xl font-heading font-bold text-foreground">
+            <h2 className="text-2xl font-heading font-extrabold text-[#3D4852]">
               Customer Data Import & Export
             </h2>
-            <p className="text-sm font-body text-foreground/70">
+            <p className="text-sm font-body text-[#6B7280]">
               Bulk import new leads via CSV with duplicate validation, or export records for spreadsheet backups
             </p>
           </div>
@@ -240,15 +240,15 @@ export function ImportExportPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* CSV Import Card */}
-        <Card className="border-2 border-border p-5 space-y-4" tape={true}>
-          <div className="border-b-2 border-dashed border-border/40 pb-2 flex items-center gap-2">
-            <Upload className="w-5 h-5 text-secondary-accent" />
-            <h3 className="text-xl font-heading font-bold text-foreground">
+        <Card className="p-6 space-y-5">
+          <div className="border-b border-[#A3B1C6]/30 pb-3 flex items-center gap-2">
+            <Upload className="w-5 h-5 text-[#6C63FF]" />
+            <h3 className="text-xl font-heading font-extrabold text-[#3D4852]">
               Import Leads from CSV
             </h3>
           </div>
 
-          <div className="p-4 border-2 border-dashed border-border rounded-lg text-center bg-stone-50">
+          <div className="p-8 rounded-2xl shadow-neu-pressed bg-[#E0E5EC] text-center border-2 border-dashed border-[#A3B1C6]/50 hover:border-[#6C63FF]/50 transition-all">
             <input
               type="file"
               accept=".csv"
@@ -258,15 +258,15 @@ export function ImportExportPage() {
             />
             <label
               htmlFor="csv-file-input"
-              className="cursor-pointer flex flex-col items-center justify-center gap-2"
+              className="cursor-pointer flex flex-col items-center justify-center gap-3"
             >
-              <div className="w-12 h-12 rounded-full bg-white border-2 border-border flex items-center justify-center shadow-hand-sm">
-                <FileText className="w-6 h-6 text-secondary-accent" />
+              <div className="w-14 h-14 rounded-2xl shadow-neu-flat bg-[#E0E5EC] flex items-center justify-center text-[#6C63FF] hover:scale-105 transition-transform">
+                <FileText className="w-7 h-7" />
               </div>
-              <span className="font-heading font-bold text-base text-foreground">
+              <span className="font-heading font-bold text-base text-[#3D4852]">
                 {csvFile ? csvFile.name : 'Choose CSV file to upload'}
               </span>
-              <span className="text-xs text-foreground/60">
+              <span className="text-xs text-[#6B7280]">
                 Supports Excel/Google Sheets exported CSV files
               </span>
             </label>
@@ -274,16 +274,16 @@ export function ImportExportPage() {
 
           {/* Mapping Controls */}
           {parsedData.length > 0 && (
-            <div className="space-y-3 p-3 bg-sticky-yellow/40 border-2 border-border rounded-lg">
-              <div className="font-heading font-bold text-sm text-foreground">
+            <div className="space-y-4 p-5 bg-[#E0E5EC] rounded-2xl shadow-neu-pressed">
+              <div className="font-heading font-bold text-sm text-[#3D4852]">
                 Map CSV Columns ({parsedData.length} rows loaded):
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-body">
                 <div>
-                  <label className="font-bold block mb-1">Customer Full Name *</label>
+                  <label className="font-semibold block mb-1 text-[#3D4852]">Customer Full Name *</label>
                   <select
-                    className="input-hand w-full text-xs py-1"
+                    className="w-full text-xs py-2 px-3 rounded-xl shadow-neu-pressed bg-[#E0E5EC] text-[#3D4852] border-0 focus:shadow-neu-pressed-deep focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-body font-medium"
                     value={columnMapping.fullName}
                     onChange={(e) => setColumnMapping({ ...columnMapping, fullName: e.target.value })}
                   >
@@ -293,9 +293,9 @@ export function ImportExportPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">Primary Phone *</label>
+                  <label className="font-semibold block mb-1 text-[#3D4852]">Primary Phone *</label>
                   <select
-                    className="input-hand w-full text-xs py-1"
+                    className="w-full text-xs py-2 px-3 rounded-xl shadow-neu-pressed bg-[#E0E5EC] text-[#3D4852] border-0 focus:shadow-neu-pressed-deep focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-body font-medium"
                     value={columnMapping.phone}
                     onChange={(e) => setColumnMapping({ ...columnMapping, phone: e.target.value })}
                   >
@@ -305,9 +305,9 @@ export function ImportExportPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">Product Requirement</label>
+                  <label className="font-semibold block mb-1 text-[#3D4852]">Product Requirement</label>
                   <select
-                    className="input-hand w-full text-xs py-1"
+                    className="w-full text-xs py-2 px-3 rounded-xl shadow-neu-pressed bg-[#E0E5EC] text-[#3D4852] border-0 focus:shadow-neu-pressed-deep focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-body font-medium"
                     value={columnMapping.requirement}
                     onChange={(e) => setColumnMapping({ ...columnMapping, requirement: e.target.value })}
                   >
@@ -317,9 +317,9 @@ export function ImportExportPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">Budget (INR)</label>
+                  <label className="font-semibold block mb-1 text-[#3D4852]">Budget (INR)</label>
                   <select
-                    className="input-hand w-full text-xs py-1"
+                    className="w-full text-xs py-2 px-3 rounded-xl shadow-neu-pressed bg-[#E0E5EC] text-[#3D4852] border-0 focus:shadow-neu-pressed-deep focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-body font-medium"
                     value={columnMapping.budget}
                     onChange={(e) => setColumnMapping({ ...columnMapping, budget: e.target.value })}
                   >
@@ -329,9 +329,9 @@ export function ImportExportPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">Category (Hot/Warm/Cold)</label>
+                  <label className="font-semibold block mb-1 text-[#3D4852]">Category (Hot/Warm/Cold)</label>
                   <select
-                    className="input-hand w-full text-xs py-1"
+                    className="w-full text-xs py-2 px-3 rounded-xl shadow-neu-pressed bg-[#E0E5EC] text-[#3D4852] border-0 focus:shadow-neu-pressed-deep focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-body font-medium"
                     value={columnMapping.leadCategory}
                     onChange={(e) => setColumnMapping({ ...columnMapping, leadCategory: e.target.value })}
                   >
@@ -341,9 +341,9 @@ export function ImportExportPage() {
                 </div>
 
                 <div>
-                  <label className="font-bold block mb-1">City / Area</label>
+                  <label className="font-semibold block mb-1 text-[#3D4852]">City / Area</label>
                   <select
-                    className="input-hand w-full text-xs py-1"
+                    className="w-full text-xs py-2 px-3 rounded-xl shadow-neu-pressed bg-[#E0E5EC] text-[#3D4852] border-0 focus:shadow-neu-pressed-deep focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-body font-medium"
                     value={columnMapping.city}
                     onChange={(e) => setColumnMapping({ ...columnMapping, city: e.target.value })}
                   >
@@ -354,8 +354,8 @@ export function ImportExportPage() {
               </div>
 
               {/* Sample Row Preview */}
-              <div className="mt-2 p-2 bg-white border border-border rounded text-[11px] font-mono">
-                <span className="font-bold block text-foreground/60 mb-0.5">Sample Preview (Row 1):</span>
+              <div className="mt-2 p-3 bg-[#E0E5EC] rounded-xl shadow-neu-flat text-[11px] font-mono text-[#3D4852]">
+                <span className="font-bold block text-[#6B7280] mb-0.5">Sample Preview (Row 1):</span>
                 <span>Name: {parsedData[0][columnMapping.fullName] || '—'}</span> •{' '}
                 <span>Phone: {parsedData[0][columnMapping.phone] || '—'}</span> •{' '}
                 <span>Req: {parsedData[0][columnMapping.requirement] || '—'}</span>
@@ -375,19 +375,19 @@ export function ImportExportPage() {
 
           {/* Import Results Summary */}
           {importResults && (
-            <div className="p-4 bg-emerald-50 border-2 border-emerald-600 rounded-lg text-xs font-body space-y-1">
-              <div className="font-heading font-bold text-sm text-emerald-900 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+            <div className="p-4 rounded-2xl shadow-neu-pressed bg-[#E0E5EC] border-l-4 border-emerald-500 text-xs font-body space-y-1">
+              <div className="font-heading font-bold text-sm text-emerald-700 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 Import Completed Successfully!
               </div>
-              <div className="text-emerald-800">
+              <div className="text-[#3D4852]">
                 • Successfully Added: <strong>{importResults.success}</strong>
               </div>
-              <div className="text-emerald-800">
+              <div className="text-[#3D4852]">
                 • Skipped / Invalid: <strong>{importResults.skipped}</strong>
               </div>
               {importResults.errors.length > 0 && (
-                <div className="mt-2 text-danger">
+                <div className="mt-2 text-rose-600">
                   <strong>Errors Encountered ({importResults.errors.length}):</strong>
                   <ul className="list-disc pl-4 space-y-0.5 mt-1 max-h-24 overflow-y-auto">
                     {importResults.errors.map((err, i) => (
@@ -401,21 +401,24 @@ export function ImportExportPage() {
         </Card>
 
         {/* CSV Export Card */}
-        <Card className="border-2 border-border p-5 space-y-4" tape={true}>
-          <div className="border-b-2 border-dashed border-border/40 pb-2 flex items-center gap-2">
-            <Download className="w-5 h-5 text-secondary-accent" />
-            <h3 className="text-xl font-heading font-bold text-foreground">
+        <Card className="p-6 space-y-5">
+          <div className="border-b border-[#A3B1C6]/30 pb-3 flex items-center gap-2">
+            <Download className="w-5 h-5 text-[#6C63FF]" />
+            <h3 className="text-xl font-heading font-extrabold text-[#3D4852]">
               Export Leads & Call Reports
             </h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Export Customers */}
-            <div className="p-4 bg-paper-white border-2 border-border rounded-lg shadow-hand-sm space-y-3">
-              <div className="font-heading font-bold text-base text-foreground">
+            <div className="p-5 bg-[#E0E5EC] rounded-2xl shadow-neu-flat space-y-3">
+              <div className="font-heading font-bold text-base text-[#3D4852]">
                 Export Customer Database
               </div>
-              <div className="flex items-center gap-3">
+              <p className="text-xs text-[#6B7280]">
+                Download full customer records matching the selected lead category.
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Select
                   value={exportCategory}
                   onChange={(e) => setExportCategory(e.target.value)}
@@ -425,6 +428,7 @@ export function ImportExportPage() {
                     { value: 'Warm', label: 'Warm Leads Only' },
                     { value: 'Cold', label: 'Cold Leads Only' },
                   ]}
+                  className="flex-1"
                 />
                 <Button
                   variant="secondary"
@@ -438,11 +442,11 @@ export function ImportExportPage() {
             </div>
 
             {/* Export Call Logs */}
-            <div className="p-4 bg-paper-white border-2 border-border rounded-lg shadow-hand-sm space-y-3">
-              <div className="font-heading font-bold text-base text-foreground">
+            <div className="p-5 bg-[#E0E5EC] rounded-2xl shadow-neu-flat space-y-3">
+              <div className="font-heading font-bold text-base text-[#3D4852]">
                 Export Calling History & Feedbacks
               </div>
-              <p className="text-xs text-foreground/70">
+              <p className="text-xs text-[#6B7280]">
                 Generates full spreadsheet of past calls, customer feedbacks, and call outcomes.
               </p>
               <Button
@@ -450,6 +454,7 @@ export function ImportExportPage() {
                 icon={Download}
                 onClick={handleExportCallLogs}
                 disabled={exporting}
+                className="w-full sm:w-auto"
               >
                 Download Call History CSV
               </Button>

@@ -105,8 +105,8 @@ export function ReportsPage() {
         outcomeData,
         employeeData,
         followUpData: [
-          { name: 'Completed Calls', count: completedFollowUps, fill: '#2e7d32' },
-          { name: 'Pending Follow-ups', count: pendingFollowUps, fill: '#a66a00' },
+          { name: 'Completed Calls', count: completedFollowUps, fill: '#38B2AC' },
+          { name: 'Pending Follow-ups', count: pendingFollowUps, fill: '#F6AD55' },
         ],
       });
     } catch (e) {
@@ -120,27 +120,36 @@ export function ReportsPage() {
     loadReports();
   }, []);
 
-  const COLORS = ['#ff4d4d', '#2d5da1', '#a66a00', '#2e7d32', '#7b1fa2', '#f57c00'];
+  const tooltipStyle = {
+    backgroundColor: '#E0E5EC',
+    border: 'none',
+    borderRadius: '16px',
+    boxShadow: '4px 4px 10px rgba(163, 177, 198, 0.6), -4px -4px 10px rgba(255, 255, 255, 0.8)',
+    color: '#3D4852',
+    fontFamily: 'DM Sans, sans-serif',
+    padding: '8px 14px',
+    fontSize: '12px',
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="p-4 bg-paper-white card-hand border-2 border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-sticky-yellow border-2 border-border rounded-lg shadow-hand-sm">
-            <BarChart3 className="w-6 h-6 text-foreground stroke-[2]" />
+      <div className="bg-[#E0E5EC] rounded-[32px] p-6 shadow-neu-flat flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl shadow-neu-pressed flex items-center justify-center bg-[#E0E5EC] text-[#6C63FF]">
+            <BarChart3 className="w-6 h-6 stroke-[2.2]" />
           </div>
           <div>
-            <h2 className="text-2xl font-heading font-bold text-foreground">
+            <h2 className="text-2xl font-heading font-extrabold text-[#3D4852]">
               Store Analytics & Calling Performance
             </h2>
-            <p className="text-sm font-body text-foreground/70">
+            <p className="text-sm font-body text-[#6B7280]">
               Aggregated metrics computed from real database records in Kanpur
             </p>
           </div>
         </div>
 
-        <Button variant="muted" size="sm" icon={RefreshCw} onClick={loadReports}>
+        <Button variant="secondary" size="sm" icon={RefreshCw} onClick={loadReports}>
           Refresh Analytics
         </Button>
       </div>
@@ -151,30 +160,50 @@ export function ReportsPage() {
         <>
           {/* Key Metric Highlights */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="border-2 border-border">
-              <span className="text-xs font-bold text-foreground/60 uppercase">Total Leads</span>
-              <div className="text-3xl font-heading font-bold text-foreground mt-1">
+            <Card className="p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Total Leads</span>
+                <div className="w-8 h-8 rounded-xl shadow-neu-pressed flex items-center justify-center text-[#6C63FF]">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-3xl font-heading font-extrabold text-[#3D4852] mt-3">
                 {reportData?.totalLeads || 0}
               </div>
             </Card>
 
-            <Card className="border-2 border-emerald-600 bg-emerald-50/40">
-              <span className="text-xs font-bold text-emerald-800 uppercase">Conversion Rate</span>
-              <div className="text-3xl font-heading font-bold text-emerald-800 mt-1">
+            <Card className="p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#38B2AC] uppercase tracking-wider">Conversion Rate</span>
+                <div className="w-8 h-8 rounded-xl shadow-neu-pressed flex items-center justify-center text-[#38B2AC]">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-3xl font-heading font-extrabold text-[#38B2AC] mt-3">
                 {reportData?.conversionRate || 0}%
               </div>
             </Card>
 
-            <Card className="border-2 border-border">
-              <span className="text-xs font-bold text-foreground/60 uppercase">Total Calls Logged</span>
-              <div className="text-3xl font-heading font-bold text-foreground mt-1">
+            <Card className="p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#6B7280] uppercase tracking-wider">Total Calls Logged</span>
+                <div className="w-8 h-8 rounded-xl shadow-neu-pressed flex items-center justify-center text-[#6C63FF]">
+                  <PhoneCall className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-3xl font-heading font-extrabold text-[#3D4852] mt-3">
                 {reportData?.totalCalls || 0}
               </div>
             </Card>
 
-            <Card className="border-2 border-amber-600 bg-amber-50/40">
-              <span className="text-xs font-bold text-amber-900 uppercase">Converted Customers</span>
-              <div className="text-3xl font-heading font-bold text-amber-900 mt-1">
+            <Card className="p-5 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#F6AD55] uppercase tracking-wider">Converted</span>
+                <div className="w-8 h-8 rounded-xl shadow-neu-pressed flex items-center justify-center text-[#F6AD55]">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-3xl font-heading font-extrabold text-[#F6AD55] mt-3">
                 {reportData?.convertedCount || 0}
               </div>
             </Card>
@@ -183,50 +212,36 @@ export function ReportsPage() {
           {/* Charts Row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Lead Acquisition Sources */}
-            <Card className="border-2 border-border p-4" tape={true}>
-              <h3 className="text-xl font-heading font-bold text-foreground mb-3">
+            <Card className="p-6">
+              <h3 className="text-lg font-heading font-extrabold text-[#3D4852] mb-4">
                 Lead Sources (Walk-in vs Digital)
               </h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={reportData?.sourceData || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e0d8" />
-                    <XAxis dataKey="source" tick={{ fontSize: 11, fontFamily: 'Patrick Hand' }} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #2d2d2d',
-                        borderRadius: '8px',
-                        fontFamily: 'Patrick Hand',
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#2d5da1" stroke="#2d2d2d" strokeWidth={1.5} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#A3B1C6" opacity={0.3} />
+                    <XAxis dataKey="source" tick={{ fontSize: 11, fontFamily: 'DM Sans, sans-serif', fill: '#6B7280' }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fontFamily: 'DM Sans, sans-serif', fill: '#6B7280' }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="count" fill="#6C63FF" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
             {/* Calls by Outcome */}
-            <Card className="border-2 border-border p-4" tape={true}>
-              <h3 className="text-xl font-heading font-bold text-foreground mb-3">
+            <Card className="p-6">
+              <h3 className="text-lg font-heading font-extrabold text-[#3D4852] mb-4">
                 Call Outcomes Distribution
               </h3>
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={reportData?.outcomeData || []} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e0d8" />
-                    <XAxis type="number" allowDecimals={false} />
-                    <YAxis dataKey="outcome" type="category" width={110} tick={{ fontSize: 11, fontFamily: 'Patrick Hand' }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #2d2d2d',
-                        borderRadius: '8px',
-                        fontFamily: 'Patrick Hand',
-                      }}
-                    />
-                    <Bar dataKey="calls" fill="#ff4d4d" stroke="#2d2d2d" strokeWidth={1.5} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#A3B1C6" opacity={0.3} />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fontFamily: 'DM Sans, sans-serif', fill: '#6B7280' }} />
+                    <YAxis dataKey="outcome" type="category" width={110} tick={{ fontSize: 11, fontFamily: 'DM Sans, sans-serif', fill: '#6B7280' }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="calls" fill="#FC8181" radius={[0, 8, 8, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -236,8 +251,8 @@ export function ReportsPage() {
           {/* Charts Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Follow-up Completion vs Pending */}
-            <Card className="border-2 border-border p-4">
-              <h3 className="text-xl font-heading font-bold text-foreground mb-3">
+            <Card className="p-6">
+              <h3 className="text-lg font-heading font-extrabold text-[#3D4852] mb-4">
                 Follow-up Task Completion
               </h3>
               <div className="h-60 w-full">
@@ -252,48 +267,36 @@ export function ReportsPage() {
                       label
                     >
                       {reportData?.followUpData?.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} stroke="#2d2d2d" strokeWidth={2} />
+                        <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        border: '2px solid #2d2d2d',
-                        borderRadius: '8px',
-                        fontFamily: 'Patrick Hand',
-                      }}
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend
+                      formatter={(val) => <span className="text-xs font-body font-medium text-[#3D4852]">{val}</span>}
                     />
-                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
             {/* Employee Calling Activity */}
-            <Card className="border-2 border-border p-4">
-              <h3 className="text-xl font-heading font-bold text-foreground mb-3">
+            <Card className="p-6">
+              <h3 className="text-lg font-heading font-extrabold text-[#3D4852] mb-4">
                 Calls Made by Executive
               </h3>
               <div className="h-60 w-full">
                 {reportData?.employeeData?.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-xs text-foreground/60">
+                  <div className="h-full flex items-center justify-center text-xs text-[#6B7280]">
                     No calls recorded yet
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={reportData?.employeeData || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e0d8" />
-                      <XAxis dataKey="employee" tick={{ fontSize: 11, fontFamily: 'Patrick Hand' }} />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          border: '2px solid #2d2d2d',
-                          borderRadius: '8px',
-                          fontFamily: 'Patrick Hand',
-                        }}
-                      />
-                      <Bar dataKey="calls" fill="#a66a00" stroke="#2d2d2d" strokeWidth={1.5} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#A3B1C6" opacity={0.3} />
+                      <XAxis dataKey="employee" tick={{ fontSize: 11, fontFamily: 'DM Sans, sans-serif', fill: '#6B7280' }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fontFamily: 'DM Sans, sans-serif', fill: '#6B7280' }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Bar dataKey="calls" fill="#38B2AC" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

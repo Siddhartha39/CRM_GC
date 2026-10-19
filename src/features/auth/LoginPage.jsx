@@ -6,14 +6,15 @@ import { Input } from '../../components/ui/Input';
 import {
   LogIn,
   UserPlus,
-  ShieldCheck,
   AlertCircle,
   Sparkles,
-  ExternalLink,
   ArrowRight,
   LogOut,
 } from 'lucide-react';
 
+/**
+ * Neumorphic Soft UI Login & Workspace Authentication
+ */
 export function LoginPage() {
   const navigate = useNavigate();
   const { login, signup, loginAsDemo, logout, user, userProfile } = useAuth();
@@ -58,7 +59,7 @@ export function LoginPage() {
         setIsOperationNotAllowed(true);
         msg = 'Email/Password sign-in provider is disabled in your Firebase Console for project galaxycrm-4577f.';
       } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        msg = 'Invalid email or password. If you are logging in for the first time, click "Create New Account" below.';
+        msg = 'Invalid email or password. If you are logging in for the first time, click "Create New Authorized Account" below.';
       } else if (err.code === 'auth/email-already-in-use') {
         msg = 'An account with this email already exists. Please log in instead.';
       }
@@ -96,90 +97,56 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-paper-dots flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-paper-white card-hand-lg border-2 border-border p-8 relative">
-        {/* Washi tape on top */}
-        <div className="washi-tape washi-tape-blue" />
-
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 antialiased">
+      <div className="w-full max-w-md bg-background shadow-neu-flat rounded-[32px] p-8 sm:p-10 relative transition-all">
         {/* Brand Banner */}
-        <div className="text-center mb-6">
-          <div className="inline-block p-2 bg-sticky-yellow border-2 border-border rounded-xl shadow-hand-sm mb-3">
-            <img src="/logo.svg" alt="Galaxy Computers" className="w-12 h-12" />
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 rounded-3xl bg-background shadow-neu-pressed flex items-center justify-center p-3 mb-4 mx-auto animate-neu-float">
+            <img src="/logo.svg" alt="Galaxy Computers" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">
+          <h1 className="text-3xl font-display font-extrabold text-foreground tracking-tight">
             Galaxy Computers
           </h1>
-          <p className="text-sm font-body text-secondary-accent font-semibold tracking-wider mt-0.5">
-            CRM • KANPUR STORE DESK
+          <p className="text-xs font-display font-bold text-accent tracking-widest uppercase mt-1">
+            CRM • Kanpur Store Desk
           </p>
         </div>
 
         {/* Active Session Notice if already logged in */}
         {user && (
-          <div className="p-3 bg-emerald-50 border-2 border-emerald-600 rounded-lg text-xs font-body text-emerald-950 mb-4 flex items-center justify-between">
+          <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl text-xs font-body mb-6 flex items-center justify-between">
             <div>
-              <div className="font-heading font-bold text-sm text-emerald-900">
+              <div className="font-display font-bold text-sm text-foreground">
                 Active Session: {user.displayName || user.email}
               </div>
-              <div className="text-emerald-800 text-[11px]">Role: {userProfile?.role || 'admin'}</div>
+              <div className="text-muted text-[11px]">Role: {userProfile?.role || 'admin'}</div>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => navigate('/')}
-                className="text-xs py-1 px-2"
+                className="text-xs py-1 px-3"
               >
-                Dashboard <ArrowRight className="w-3 h-3" />
+                Dashboard <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
               <button
                 type="button"
                 onClick={() => logout()}
-                className="p-1.5 text-danger hover:bg-red-100 rounded border border-danger/40 text-xs"
+                className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat text-danger flex items-center justify-center transition-all"
                 title="Sign Out"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* Operation Not Allowed Special Help Box */}
-        {isOperationNotAllowed && (
-          <div className="p-4 bg-amber-50 border-2 border-amber-600 rounded-lg text-xs font-body text-amber-950 mb-4 space-y-2">
-            <div className="font-heading font-bold text-sm text-amber-900 flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-              Firebase Setup Required: Enable Email/Password
-            </div>
-            <p className="leading-relaxed">
-              Firebase project <strong>galaxycrm-4577f</strong> has not enabled the <strong>Email/Password</strong> sign-in method yet in Firebase Console.
-            </p>
-            <div className="bg-white p-2.5 rounded border border-amber-300 space-y-1 text-[11px]">
-              <div className="font-bold text-foreground">Quick 1-Minute Fix:</div>
-              <div>1. Go to <a href="https://console.firebase.google.com/project/galaxycrm-4577f/authentication/providers" target="_blank" rel="noreferrer" className="text-secondary-accent font-bold underline inline-flex items-center gap-0.5">Firebase Authentication Providers <ExternalLink className="w-2.5 h-2.5" /></a></div>
-              <div>2. Click <strong>Email/Password</strong> and toggle <strong>Enable</strong>.</div>
-              <div>3. Click <strong>Save</strong>.</div>
-            </div>
-            <div className="pt-1">
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                icon={Sparkles}
-                onClick={() => handleInstantDemo('admin')}
-                className="w-full text-xs"
-              >
-                Enter CRM Directly (Demo Admin Mode)
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* General Error Alert */}
-        {errorMessage && !isOperationNotAllowed && (
-          <div className="p-3 bg-red-50 border-2 border-danger rounded-lg text-xs font-body text-danger flex items-start gap-2 mb-4">
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl text-xs font-body text-danger flex items-start gap-2.5 mb-6">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{errorMessage}</span>
+            <span className="leading-relaxed">{errorMessage}</span>
           </div>
         )}
 
@@ -199,7 +166,7 @@ export function LoginPage() {
             label="Work Email Address"
             type="email"
             required
-            placeholder="e.g. 6387siddhartha@gmail.com"
+            placeholder="e.g. admin@galaxycomputers.in"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -214,12 +181,12 @@ export function LoginPage() {
           />
 
           {isRegistering && (
-            <div className="p-3 bg-stone-50 border border-border/50 rounded-lg">
-              <label className="font-heading font-bold text-xs text-foreground block mb-1">
+            <div className="p-4 bg-background shadow-neu-pressed-sm rounded-2xl space-y-2">
+              <label className="font-display font-bold text-xs uppercase tracking-wider text-muted block">
                 Account Role:
               </label>
               <div className="flex gap-4 text-xs font-body">
-                <label className="flex items-center gap-1.5 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer text-foreground">
                   <input
                     type="radio"
                     name="role"
@@ -228,9 +195,9 @@ export function LoginPage() {
                     onChange={() => setRole('admin')}
                     className="accent-accent"
                   />
-                  <span>Administrator (Full Access)</span>
+                  <span>Administrator</span>
                 </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer text-foreground">
                   <input
                     type="radio"
                     name="role"
@@ -250,7 +217,7 @@ export function LoginPage() {
             variant="primary"
             icon={isRegistering ? UserPlus : LogIn}
             disabled={loading}
-            className="w-full text-base py-2.5 mt-2"
+            className="w-full text-sm font-bold py-3 mt-4"
           >
             {loading
               ? 'Connecting to Firebase...'
@@ -261,7 +228,7 @@ export function LoginPage() {
         </form>
 
         {/* Toggle Mode */}
-        <div className="mt-4 text-center">
+        <div className="mt-5 text-center">
           <button
             type="button"
             onClick={() => {
@@ -269,7 +236,7 @@ export function LoginPage() {
               setErrorMessage('');
               setIsOperationNotAllowed(false);
             }}
-            className="text-xs font-body text-secondary-accent hover:underline font-bold"
+            className="text-xs font-body text-accent hover:underline font-bold"
           >
             {isRegistering
               ? 'Already have an authorized account? Sign In'
@@ -277,39 +244,39 @@ export function LoginPage() {
           </button>
         </div>
 
-        {/* Instant Access Mode & Testing Helpers */}
-        <div className="mt-6 pt-4 border-t-2 border-dashed border-border/40 space-y-2">
-          <div className="flex items-center justify-between text-xs font-heading font-bold text-foreground/70">
-            <span>Instant One-Click Access:</span>
-            <Sparkles className="w-3.5 h-3.5 text-warning" />
+        {/* Instant Access Mode */}
+        <div className="mt-8 pt-6 border-t border-muted/20 space-y-3">
+          <div className="flex items-center justify-between text-xs font-display font-bold uppercase tracking-wider text-muted">
+            <span>Instant Quick Access:</span>
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
           </div>
 
           <Button
             type="button"
-            variant="sticky"
+            variant="secondary"
             size="md"
             onClick={() => handleInstantDemo('admin')}
-            className="w-full text-sm font-bold"
+            className="w-full text-xs font-bold"
           >
             🚀 Launch CRM as Admin ({displayName || 'Vishal'})
           </Button>
 
-          <div className="grid grid-cols-2 gap-2 text-xs font-body pt-1">
+          <div className="grid grid-cols-2 gap-3 pt-1">
             <button
               type="button"
               onClick={() => handleDemoFill('admin@galaxycomputers.in', 'admin')}
-              className="p-1.5 bg-stone-50 border border-border/50 rounded hover:bg-sticky-yellow transition-colors text-left"
+              className="p-3 bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm rounded-2xl transition-all text-left"
             >
-              <div className="font-bold text-foreground">Fill Admin</div>
-              <div className="text-[10px] text-foreground/60 truncate">admin@galaxy...</div>
+              <div className="font-display font-bold text-xs text-foreground">Fill Admin</div>
+              <div className="text-[10px] text-muted truncate">admin@galaxy...</div>
             </button>
             <button
               type="button"
               onClick={() => handleDemoFill('sales@galaxycomputers.in', 'employee')}
-              className="p-1.5 bg-stone-50 border border-border/50 rounded hover:bg-sticky-yellow transition-colors text-left"
+              className="p-3 bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm rounded-2xl transition-all text-left"
             >
-              <div className="font-bold text-foreground">Fill Staff</div>
-              <div className="text-[10px] text-foreground/60 truncate">sales@galaxy...</div>
+              <div className="font-display font-bold text-xs text-foreground">Fill Staff</div>
+              <div className="text-[10px] text-muted truncate">sales@galaxy...</div>
             </button>
           </div>
         </div>
