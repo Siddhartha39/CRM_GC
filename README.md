@@ -48,9 +48,40 @@ The application features a unique, handcrafted, paper-based digital workspace de
 - Call outcomes: *Interested, Call Back Later, No Requirement, No Answer, Busy, Not Interested (with Do Not Contact opt-out), Converted / Sale Completed, Wrong Number*.
 - **Data Integrity:** Historical call feedback is strictly append-only and never overwritten by subsequent calls.
 
-### 5. CSV Bulk Import & Export (`/import-export`)
-- **Import:** Powered by PapaParse with interactive column mapping, sample preview, duplicate phone detection, and row-level validation.
-- **Export:** Instant CSV downloads of filtered customer records and calling history.
+### 5. Excel (.xlsx, .xls) & CSV Bulk Import/Export Hub (`/import-export`)
+- **Multi-Format Support:** Ingestion of `.xlsx`, `.xls`, and `.csv` files up to 15MB via **SheetJS (`xlsx`)** and **Papa Parse**.
+- **Multi-Worksheet Selector:** Automatically detects all sheets in an Excel workbook, allowing instant switching and sheet-level row counts.
+- **Data Preview:** Interactive 15-row preview table displaying raw sheet headers and values before mapping.
+- **15-Field Intelligent Auto-Mapping:** Automatic detection for:
+  - Customer Name (`fullName`)
+  - Mobile Number (`phone`)
+  - Alternate Phone (`alternatePhone`)
+  - Email (`email`)
+  - City / Area (`city`)
+  - Address (`address`)
+  - Product Requirement (`requirement`)
+  - Budget INR (`budget`)
+  - Lead Category (`leadCategory`: Hot, Warm, Cold)
+  - Lead Status (`leadStatus`: New, Contacted, Follow-up, Converted, Lost, Do Not Contact)
+  - Last Call Date (`lastCallDate`)
+  - Next Follow-up Date (`nextFollowUpDate`)
+  - Latest Feedback / Notes (`latestFeedback`)
+  - Customer Source (`source`)
+  - Assigned Employee (`assignedTo`)
+- **Data Integrity & Security:**
+  - Phone numbers preserved as text strings, preventing leading zero truncation or scientific notation corruption.
+  - Robust date parsing: handles Excel serial numbers (e.g. `45234` -> `2023-11-04`), ISO timestamps, and `DD/MM/YYYY` formats.
+  - Formula injection defense: strips leading `=`, `+`, `-`, `@` characters to neutralize CSV/Excel execution exploits.
+- **Pre-Import Validation Dashboard:**
+  - Live counts for Total Rows, Valid Rows, Database/Batch Duplicates, and Invalid Rows.
+  - 3 Duplicate Handling Modes:
+    1. **Skip Duplicates:** Protects existing leads, inserts only new customers.
+    2. **Update Matching Customers:** Enriches existing matching customer records with new requirements/follow-ups while strictly preserving call logs and historical timelines.
+    3. **Add New Only:** Strict mode.
+  - **1-Click Rejected Rows CSV:** Downloads a spreadsheet containing all skipped/failed rows with exact error reasons.
+- **Safe Batch Writes:** Firestore `writeBatch` execution in chunks of 150 records with live progress percentage indicators.
+- **Sample Templates:** Built-in generators for downloadable sample Excel (`.xlsx`) and CSV (`.csv`) workbooks pre-filled with Kanpur computer store customer examples.
+- **Export Hub:** Download customer databases (filtered by category) and calling logs in both `.csv` and `.xlsx` formats.
 
 ### 6. Analytics & Reports (`/reports` & `/`)
 - Real-time store KPIs: Total Leads, Hot/Warm/Cold distribution, calls logged today, overdue follow-ups, conversion rates.
@@ -78,7 +109,7 @@ The application features a unique, handcrafted, paper-based digital workspace de
 | Styling | Tailwind CSS + Custom Hand-Drawn Tokens |
 | Charts | Recharts |
 | Date Utilities | date-fns (Asia/Kolkata timezone support) |
-| CSV Engine | Papa Parse |
+| Excel & Spreadsheet Engine | SheetJS (`xlsx`) + Papa Parse |
 | Icons | Lucide React |
 | Notifications | Sonner Toaster |
 

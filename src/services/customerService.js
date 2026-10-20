@@ -276,9 +276,9 @@ function filterAndSearchCustomers(list, { category, status, assignedTo, search }
 }
 
 /**
- * Bulk import customer rows from parsed CSV
+ * Bulk import customer rows from parsed CSV / Excel
  */
-export async function bulkImportCustomers(rows, user) {
+export async function bulkImportCustomers(rows, user, options = {}) {
   const results = {
     total: rows.length,
     success: 0,
