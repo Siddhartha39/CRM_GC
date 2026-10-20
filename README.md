@@ -117,19 +117,28 @@ The application features a unique, handcrafted, paper-based digital workspace de
 
 ## ⚙️ Firebase Configuration
 
-The application is pre-configured with project `galaxycrm-4577f` in `src/lib/firebase.js`:
+The application uses Firebase Authentication and Cloud Firestore. For security best practices, sensitive keys are managed via environment variables rather than exposed in public documentation.
 
-```javascript
-const firebaseConfig = {
-  apiKey: "AIzaSyBSUb1QhQjoXYIFSwOIeFosTwMazJygjJ8",
-  authDomain: "galaxycrm-4577f.firebaseapp.com",
-  projectId: "galaxycrm-4577f",
-  storageBucket: "galaxycrm-4577f.firebasestorage.app",
-  messagingSenderId: "164533149482",
-  appId: "1:164533149482:web:3c3d7952deb365d2708853",
-  measurementId: "G-5CRL2LTT5L"
-};
+Configure your environment variables in `.env` (refer to `.env.example`):
+
+```bash
+# Copy example configuration
+cp .env.example .env
 ```
+
+Your `.env` file should contain:
+
+```env
+VITE_FIREBASE_API_KEY="your-api-key"
+VITE_FIREBASE_AUTH_DOMAIN="galaxycrm-4577f.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="galaxycrm-4577f"
+VITE_FIREBASE_STORAGE_BUCKET="galaxycrm-4577f.firebasestorage.app"
+VITE_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
+VITE_FIREBASE_APP_ID="your-app-id"
+VITE_FIREBASE_MEASUREMENT_ID="your-measurement-id"
+```
+
+> **Security Note:** Firebase Web API keys are client-side project identifiers. Actual database security is enforced by the **Firestore Security Rules** (`firestore.rules`) and user authentication, preventing unauthorized reads or writes.
 
 ---
 

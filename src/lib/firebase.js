@@ -4,13 +4,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBSUb1QhQjoXYIFSwOIeFosTwMazJygjJ8",
-  authDomain: "galaxycrm-4577f.firebaseapp.com",
-  projectId: "galaxycrm-4577f",
-  storageBucket: "galaxycrm-4577f.firebasestorage.app",
-  messagingSenderId: "164533149482",
-  appId: "1:164533149482:web:3c3d7952deb365d2708853",
-  measurementId: "G-5CRL2LTT5L"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBSUb1QhQjoXYIFSwOIeFosTwMazJygjJ8",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "galaxycrm-4577f.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "galaxycrm-4577f",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "galaxycrm-4577f.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "164533149482",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:164533149482:web:3c3d7952deb365d2708853",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-5CRL2LTT5L"
 };
 
 export const app = getApps().length
