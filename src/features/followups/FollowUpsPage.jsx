@@ -102,7 +102,11 @@ export function FollowUpsPage({ viewType = 'today' }) {
 
   const displayedTasks = tasks.filter((t) => {
     if (assignedFilter === 'Me') {
-      return t.assignedTo === user?.email;
+      return (
+        t.assignedTo &&
+        user?.email &&
+        t.assignedTo.trim().toLowerCase() === user.email.trim().toLowerCase()
+      );
     }
     return true;
   });

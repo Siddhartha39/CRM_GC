@@ -257,6 +257,14 @@ export function AddCustomerModal({
           </div>
         </div>
 
+        {/* Assigned Staff Executive */}
+        <Input
+          label="Assigned Executive Email"
+          placeholder="e.g. admin@galaxycomputers.in"
+          value={form.assignedTo}
+          onChange={(e) => handleChange('assignedTo', e.target.value)}
+        />
+
         <Textarea
           label="Internal Notes"
           rows={2}

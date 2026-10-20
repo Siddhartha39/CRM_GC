@@ -177,6 +177,26 @@ export async function updateCustomer(docId, updates, user) {
   const customerRef = doc(db, CUSTOMERS_COLLECTION, docId);
   await updateDoc(customerRef, cleanUpdates);
 
+  // If assignedTo was changed, sync all pending follow-up tasks for this customer
+  if (cleanUpdates.assignedTo) {
+    try {
+      const fQuery = query(
+        collection(db, 'followUps'),
+        where('customerId', '==', docId),
+        where('status', '==', 'Pending')
+      );
+      const fSnap = await getDocs(fQuery);
+      fSnap.docs.forEach(async (fDoc) => {
+        await updateDoc(fDoc.ref, {
+          assignedTo: cleanUpdates.assignedTo,
+          updatedAt: serverTimestamp(),
+        });
+      });
+    } catch (fErr) {
+      console.warn('Could not sync follow-up task assignment:', fErr);
+    }
+  }
+
   await logAudit({
     action: 'UPDATE_CUSTOMER',
     targetType: 'customer',
@@ -237,7 +257,7 @@ export async function getCustomers({
     const snap = await getDocs(query(q, limit(limitCount)));
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    return filterAndSearchCustomers(list, { category, status, search });
+    return filterAndSearchCustomers(list, { category, status, assignedTo, search });
   } catch (error) {
     console.error('Error fetching customers from Firestore:', error);
     return [];
@@ -248,7 +268,11 @@ function filterAndSearchCustomers(list, { category, status, assignedTo, search }
   let results = [...list];
 
   if (assignedTo && assignedTo !== 'All') {
-    results = results.filter(c => c.assignedTo === assignedTo || c.assignedToEmail === assignedTo);
+    const target = assignedTo.trim().toLowerCase();
+    results = results.filter(c => 
+      c.assignedTo?.trim().toLowerCase() === target || 
+      c.assignedToEmail?.trim().toLowerCase() === target
+    );
   }
 
   if (category && category !== 'All') {

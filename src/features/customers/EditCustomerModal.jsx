@@ -171,6 +171,13 @@ export function EditCustomerModal({
           />
         </div>
 
+        <Input
+          label="Assigned Executive Email"
+          placeholder="e.g. employee@galaxycomputers.in"
+          value={form.assignedTo || ''}
+          onChange={(e) => handleChange('assignedTo', e.target.value)}
+        />
+
         <Textarea
           label="Internal Notes"
           rows={2}
