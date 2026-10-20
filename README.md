@@ -6,16 +6,22 @@ Built with **React + Vite**, **Tailwind CSS**, and backed by **Google Firebase C
 
 ---
 
-## 🎨 Hand-Drawn Design System
+<p align="center">
+  <img src="./docs/screenshots/dashboard.png" alt="Galaxy Computers CRM Dashboard" width="100%" />
+</p>
 
-The application features a unique, handcrafted, paper-based digital workspace design:
-- **Warm Paper Canvas:** `#fdfbf7` with subtle dotted paper grid (`radial-gradient(#e5e0d8 1px, transparent 1px)`).
-- **Pencil Black Outline:** `#2d2d2d` borders with hand-drawn wobbly curvature (`border-wobbly`, `border-wobbly-md`).
-- **Hard-Offset Shadows:** `4px 4px 0 #2d2d2d` (standard) and `8px 8px 0 #2d2d2d` (emphasized).
-- **Typography:** Google Fonts:
-  - **Headings:** Kalam (weight 700)
-  - **Body & Forms:** Patrick Hand (weight 400)
-- **High Operational Usability:** Tables, forms, and workflows prioritize readability, high information density, and rapid daily calling without distorting operational data.
+---
+
+## 🎨 Neumorphic (Soft UI) Design System
+
+The application features a modern, tactile Neumorphic (Soft UI) digital workspace:
+- **Base Surface:** Cool Clay Monochromatic canvas (`#E0E5EC`) where all visual interest emerges from physical shadow play rather than flat borders.
+- **Dual Opposing Alpha Shadows:** Top-left white highlight (`rgba(255, 255, 255, 0.5)`) and bottom-right cool clay shadow (`rgba(163, 177, 198, 0.6)`).
+- **Physical States:** Extruded surface for interactive cards, deep inset wells (`shadow-neu-pressed-deep`) for text inputs, and smooth active press states.
+- **Typography:**
+  - **Headings & Display:** Plus Jakarta Sans (`font-extrabold` / `font-bold`)
+  - **Body & Forms:** DM Sans
+- **High Operational Usability:** WCAG AA compliant contrast ratios (`#3D4852` text), touch targets (44px minimum), high information density, and rapid telecalling workflows.
 
 ---
 
