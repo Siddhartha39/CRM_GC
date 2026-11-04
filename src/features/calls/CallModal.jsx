@@ -36,7 +36,7 @@ export function CallModal({
   const [callOutcome, setCallOutcome] = useState('Interested');
   const [callDuration, setCallDuration] = useState('3 mins');
   const [feedback, setFeedback] = useState('');
-  const [newCategory, setNewCategory] = useState('Warm');
+  const [newCategory, setNewCategory] = useState('');
   const [nextAction, setNextAction] = useState('');
   const [nextFollowUpDate, setNextFollowUpDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -45,7 +45,7 @@ export function CallModal({
 
   useEffect(() => {
     if (customer) {
-      setNewCategory(customer.leadCategory || 'Warm');
+      setNewCategory(customer.leadCategory || '');
       setDoNotContact(customer.leadStatus === 'Do Not Contact');
       setCallOutcome('Interested');
       setFeedback('');

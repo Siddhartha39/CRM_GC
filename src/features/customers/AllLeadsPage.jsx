@@ -21,6 +21,10 @@ import {
   Trash2,
   ArrowUpDown,
   FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,6 +46,10 @@ export function AllLeadsPage({ forcedCategory = null }) {
   const [sortField, setSortField] = useState('createdAt');
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Pagination & view controls
+  const [pageSize, setPageSize] = useState('All'); // '25', '50', '100', 'All'
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Modals
   const [callingCustomer, setCallingCustomer] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -50,12 +58,12 @@ export function AllLeadsPage({ forcedCategory = null }) {
   const fetchLeads = async () => {
     setLoading(true);
     try {
+      // Fetch all leads without artificial truncation limit
       const list = await getCustomers({
         category: forcedCategory || (categoryFilter === 'All' ? null : categoryFilter),
         status: statusFilter === 'All' ? null : statusFilter,
         assignedTo: assignedFilter === 'Me' ? user?.email : null,
         search,
-        limitCount: 100,
       });
       setCustomers(list);
     } catch (err) {
@@ -71,6 +79,10 @@ export function AllLeadsPage({ forcedCategory = null }) {
     }, 200);
     return () => clearTimeout(timer);
   }, [categoryFilter, statusFilter, assignedFilter, search, forcedCategory]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, statusFilter, assignedFilter, search, pageSize]);
 
   const toggleSort = (field) => {
     if (sortField === field) {
@@ -88,11 +100,26 @@ export function AllLeadsPage({ forcedCategory = null }) {
     if (aVal === undefined || aVal === null) aVal = '';
     if (bVal === undefined || bVal === null) bVal = '';
 
+    // Handle Firestore Timestamps
+    if (aVal && typeof aVal.toMillis === 'function') aVal = aVal.toMillis();
+    if (bVal && typeof bVal.toMillis === 'function') bVal = bVal.toMillis();
+    if (aVal && typeof aVal.seconds === 'number') aVal = aVal.seconds;
+    if (bVal && typeof bVal.seconds === 'number') bVal = bVal.seconds;
+
     if (typeof aVal === 'string') {
       return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
     return sortAsc ? aVal - bVal : bVal - aVal;
   });
+
+  // Calculate pagination window
+  const totalLeads = sortedCustomers.length;
+  const numPageSize = pageSize === 'All' ? totalLeads : parseInt(pageSize, 10);
+  const totalPages = Math.max(1, Math.ceil(totalLeads / (numPageSize || 1)));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = pageSize === 'All' ? 0 : (safeCurrentPage - 1) * numPageSize;
+  const endIndex = pageSize === 'All' ? totalLeads : Math.min(startIndex + numPageSize, totalLeads);
+  const displayedCustomers = sortedCustomers.slice(startIndex, endIndex);
 
   const handleDelete = async () => {
     if (!deletingCustomer) return;
@@ -107,7 +134,7 @@ export function AllLeadsPage({ forcedCategory = null }) {
   };
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-28">
       {/* Page Header Bar */}
       <div className="p-6 sm:p-8 bg-background shadow-neu-flat rounded-[32px] flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -115,7 +142,7 @@ export function AllLeadsPage({ forcedCategory = null }) {
             {forcedCategory ? `${forcedCategory} Leads` : 'Customer Master Database'}
           </h2>
           <p className="text-sm font-body text-muted mt-1">
-            Managing {customers.length} customer records in Kanpur workspace
+            Managing <strong className="text-accent font-bold">{customers.length}</strong> customer records in Kanpur workspace
           </p>
         </div>
 
@@ -164,6 +191,7 @@ export function AllLeadsPage({ forcedCategory = null }) {
                 { value: 'Hot', label: '🔥 Hot Leads' },
                 { value: 'Warm', label: '⚡ Warm Leads' },
                 { value: 'Cold', label: '❄️ Cold Leads' },
+                { value: 'Unassigned', label: '⚪ Unassigned (No Category)' },
               ]}
             />
           )}
@@ -193,10 +221,40 @@ export function AllLeadsPage({ forcedCategory = null }) {
             ]}
           />
         </div>
+
+        {/* View Controls: Row Count & Page Size Switcher */}
+        <div className="mt-4 pt-4 border-t border-muted/15 flex flex-wrap items-center justify-between gap-3 text-xs font-body text-muted">
+          <div className="flex items-center gap-2">
+            <span>Showing:</span>
+            <span className="font-bold text-foreground">
+              {totalLeads === 0 ? 0 : startIndex + 1} – {endIndex} of {totalLeads} leads
+            </span>
+            {search && <span className="text-accent">(filtered by search)</span>}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground/80">Rows per page:</span>
+            <div className="flex items-center gap-1 bg-background shadow-neu-pressed p-1 rounded-xl">
+              {['25', '50', '100', 'All'].map((sz) => (
+                <button
+                  key={sz}
+                  onClick={() => setPageSize(sz)}
+                  className={`px-2.5 py-1 rounded-lg font-display text-xs font-bold transition-all ${
+                    pageSize === sz
+                      ? 'bg-background shadow-neu-flat text-accent'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  {sz === 'All' ? `All (${totalLeads})` : sz}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Leads Table Container */}
-      <div className="p-6 bg-background shadow-neu-flat rounded-[32px] overflow-hidden">
+      <div className="p-6 bg-background shadow-neu-flat rounded-[32px]">
         {loading ? (
           <div className="py-6">
             <LoadingSkeleton count={5} height="h-16" />
@@ -209,134 +267,186 @@ export function AllLeadsPage({ forcedCategory = null }) {
             onAction={onOpenAddCustomer}
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm font-body">
-              <thead>
-                <tr className="border-b border-muted/20 text-xs font-display font-bold uppercase tracking-wider text-muted">
-                  <th
-                    onClick={() => toggleSort('customerId')}
-                    className="py-3 px-4 cursor-pointer hover:text-accent transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>ID</span>
-                      <ArrowUpDown className="w-3.5 h-3.5" />
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => toggleSort('fullName')}
-                    className="py-3 px-4 cursor-pointer hover:text-accent transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Customer Name</span>
-                      <ArrowUpDown className="w-3.5 h-3.5" />
-                    </div>
-                  </th>
-                  <th className="py-3 px-4">Phone / WhatsApp</th>
-                  <th className="py-3 px-4">Requirement / Interest</th>
-                  <th
-                    onClick={() => toggleSort('budget')}
-                    className="py-3 px-4 cursor-pointer hover:text-accent transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Budget</span>
-                      <ArrowUpDown className="w-3.5 h-3.5" />
-                    </div>
-                  </th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Next Follow-Up</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-muted/10">
-                {sortedCustomers.map((cust) => (
-                  <tr key={cust.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-xs text-muted">
-                      {cust.customerId || '—'}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div
-                        onClick={() => navigate(`/leads/${cust.id}`)}
-                        className="font-display font-bold text-base text-foreground hover:text-accent cursor-pointer transition-colors"
-                      >
-                        {cust.fullName}
+          <div className="space-y-4">
+            <div className="overflow-x-auto touch-pan-y pb-2">
+              <table className="w-full text-left text-sm font-body">
+                <thead>
+                  <tr className="border-b border-muted/20 text-xs font-display font-bold uppercase tracking-wider text-muted">
+                    <th
+                      onClick={() => toggleSort('customerId')}
+                      className="py-3 px-4 cursor-pointer hover:text-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>ID</span>
+                        <ArrowUpDown className="w-3.5 h-3.5" />
                       </div>
-                      <div className="text-xs text-muted">{cust.city || 'Kanpur'}</div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <a
-                        href={`tel:${cust.phone}`}
-                        className="font-mono text-xs font-bold text-accent hover:underline block"
-                      >
-                        📞 {cust.phone}
-                      </a>
-                      {cust.whatsAppNumber && cust.whatsAppNumber !== cust.phone && (
-                        <span className="text-[11px] text-accent-secondary">
-                          WA: {cust.whatsAppNumber}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 max-w-xs truncate">
-                      <div className="font-semibold text-xs text-foreground">
-                        {cust.interest}
+                    </th>
+                    <th
+                      onClick={() => toggleSort('fullName')}
+                      className="py-3 px-4 cursor-pointer hover:text-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Customer Name</span>
+                        <ArrowUpDown className="w-3.5 h-3.5" />
                       </div>
-                      {cust.requirement && (
-                        <div className="text-xs text-muted truncate">
-                          {cust.requirement}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-xs text-foreground font-mono">
-                      {formatINR(cust.budget)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <LeadCategoryBadge category={cust.leadCategory} size="sm" />
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <LeadStatusBadge status={cust.leadStatus} size="sm" />
-                    </td>
-                    <td className="py-3.5 px-4 text-xs font-body font-bold text-foreground">
-                      {cust.nextFollowUpDate ? formatKolkataDate(cust.nextFollowUpDate) : '—'}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          icon={Phone}
-                          onClick={() => setCallingCustomer(cust)}
-                        >
-                          Call
-                        </Button>
-                        <button
-                          onClick={() => navigate(`/leads/${cust.id}`)}
-                          className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground transition-all"
-                          title="View Profile"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditingCustomer(cust)}
-                          className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-accent transition-all"
-                          title="Edit Customer"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {isAdmin && (
-                          <button
-                            onClick={() => setDeletingCustomer(cust)}
-                            className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-danger transition-all"
-                            title="Delete Lead"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
+                    </th>
+                    <th className="py-3 px-4">Phone / WhatsApp</th>
+                    <th className="py-3 px-4">Requirement / Interest</th>
+                    <th
+                      onClick={() => toggleSort('budget')}
+                      className="py-3 px-4 cursor-pointer hover:text-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Budget</span>
+                        <ArrowUpDown className="w-3.5 h-3.5" />
                       </div>
-                    </td>
+                    </th>
+                    <th className="py-3 px-4">Category</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Next Follow-Up</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-muted/10">
+                  {displayedCustomers.map((cust) => (
+                    <tr key={cust.id} className="hover:bg-muted/10 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-xs text-muted">
+                        {cust.customerId || '—'}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div
+                          onClick={() => navigate(`/leads/${cust.id}`)}
+                          className="font-display font-bold text-base text-foreground hover:text-accent cursor-pointer transition-colors"
+                        >
+                          {cust.fullName}
+                        </div>
+                        <div className="text-xs text-muted">{cust.city || 'Kanpur'}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <a
+                          href={`tel:${cust.phone}`}
+                          className="font-mono text-xs font-bold text-accent hover:underline block"
+                        >
+                          📞 {cust.phone}
+                        </a>
+                        {cust.whatsAppNumber && cust.whatsAppNumber !== cust.phone && (
+                          <span className="text-[11px] text-accent-secondary">
+                            WA: {cust.whatsAppNumber}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 max-w-xs truncate">
+                        <div className="font-semibold text-xs text-foreground">
+                          {cust.interest}
+                        </div>
+                        {cust.requirement && (
+                          <div className="text-xs text-muted truncate">
+                            {cust.requirement}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-xs text-foreground font-mono">
+                        {formatINR(cust.budget)}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <LeadCategoryBadge category={cust.leadCategory} size="sm" />
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <LeadStatusBadge status={cust.leadStatus} size="sm" />
+                      </td>
+                      <td className="py-3.5 px-4 text-xs font-body font-bold text-foreground">
+                        {cust.nextFollowUpDate ? formatKolkataDate(cust.nextFollowUpDate) : '—'}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            icon={Phone}
+                            onClick={() => setCallingCustomer(cust)}
+                          >
+                            Call
+                          </Button>
+                          <button
+                            onClick={() => navigate(`/leads/${cust.id}`)}
+                            className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground transition-all"
+                            title="View Profile"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setEditingCustomer(cust)}
+                            className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-accent transition-all"
+                            title="Edit Customer"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => setDeletingCustomer(cust)}
+                              className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-danger transition-all"
+                              title="Delete Lead"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Bottom Pagination Controls (when paginated) */}
+            {pageSize !== 'All' && totalPages > 1 && (
+              <div className="pt-4 border-t border-muted/15 flex flex-wrap items-center justify-between gap-4">
+                <div className="text-xs font-body text-muted">
+                  Page <strong className="text-foreground">{safeCurrentPage}</strong> of{' '}
+                  <strong className="text-foreground">{totalPages}</strong> ({totalLeads} total records)
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={safeCurrentPage === 1}
+                    className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    title="First Page"
+                  >
+                    <ChevronsLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    title="Previous Page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <span className="px-3 py-1 font-display font-bold text-xs bg-background shadow-neu-pressed rounded-xl text-accent">
+                    {safeCurrentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    title="Next Page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={safeCurrentPage === totalPages}
+                    className="w-8 h-8 rounded-xl bg-background shadow-neu-flat-sm hover:shadow-neu-flat active:shadow-neu-pressed-sm flex items-center justify-center text-muted hover:text-foreground disabled:opacity-40 disabled:pointer-events-none transition-all"
+                    title="Last Page"
+                  >
+                    <ChevronsRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

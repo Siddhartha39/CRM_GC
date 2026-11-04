@@ -54,7 +54,7 @@ export function AddCustomerModal({
     interest: 'Refurbished Laptop',
     requirement: '',
     budget: '',
-    leadCategory: 'Hot',
+    leadCategory: '',
     leadStatus: 'New',
     assignedTo: user?.email || 'admin@galaxycrm.local',
     nextFollowUpDate: getQuickScheduleDate('tomorrow'),
@@ -227,9 +227,10 @@ export function AddCustomerModal({
         <div className="p-5 bg-background shadow-neu-pressed-sm rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select
             label="Initial Lead Category"
-            value={form.leadCategory}
+            value={form.leadCategory || ''}
             onChange={(e) => handleChange('leadCategory', e.target.value)}
             options={[
+              { value: '', label: '⚪ Unassigned (Select Category)' },
               { value: 'Hot', label: '🔥 Hot Lead (Immediate Need)' },
               { value: 'Warm', label: '⚡ Warm Lead (Needs Evaluation)' },
               { value: 'Cold', label: '❄️ Cold Lead (Future/Budget)' },

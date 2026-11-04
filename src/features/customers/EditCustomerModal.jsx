@@ -36,7 +36,7 @@ export function EditCustomerModal({
         interest: customer.interest || 'Refurbished Laptop',
         requirement: customer.requirement || '',
         budget: customer.budget !== null && customer.budget !== undefined ? customer.budget : '',
-        leadCategory: customer.leadCategory || 'Warm',
+        leadCategory: customer.leadCategory || '',
         leadStatus: customer.leadStatus || 'New',
         assignedTo: customer.assignedTo || '',
         internalNotes: customer.internalNotes || '',
@@ -136,9 +136,10 @@ export function EditCustomerModal({
 
           <Select
             label="Lead Category"
-            value={form.leadCategory || 'Warm'}
+            value={form.leadCategory || ''}
             onChange={(e) => handleChange('leadCategory', e.target.value)}
             options={[
+              { value: '', label: '⚪ Unassigned (No Category)' },
               { value: 'Hot', label: '🔥 Hot Lead' },
               { value: 'Warm', label: '⚡ Warm Lead' },
               { value: 'Cold', label: '❄️ Cold Lead' },

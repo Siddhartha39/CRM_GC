@@ -97,7 +97,7 @@ export async function createCustomer(data, user) {
     interest: data.interest || 'Laptops',
     requirement: data.requirement?.trim() || '',
     budget: data.budget ? Number(data.budget) : null,
-    leadCategory: data.leadCategory || 'Cold',
+    leadCategory: data.leadCategory || '',
     leadStatus: data.leadStatus || 'New',
     assignedTo: data.assignedTo || user?.email || 'Unassigned',
     assignedToName: data.assignedToName || user?.displayName || 'Unassigned',
@@ -250,11 +250,13 @@ export async function getCustomers({
   status = null,
   assignedTo = null,
   search = '',
-  limitCount = 100,
+  limitCount = null,
 } = {}) {
   try {
     const q = collection(db, CUSTOMERS_COLLECTION);
-    const snap = await getDocs(query(q, limit(limitCount)));
+    const snap = limitCount
+      ? await getDocs(query(q, limit(limitCount)))
+      : await getDocs(q);
     const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return filterAndSearchCustomers(list, { category, status, assignedTo, search });
@@ -276,7 +278,11 @@ function filterAndSearchCustomers(list, { category, status, assignedTo, search }
   }
 
   if (category && category !== 'All') {
-    results = results.filter(c => c.leadCategory === category);
+    if (category === 'Unassigned' || category === 'None' || category === 'Empty') {
+      results = results.filter(c => !c.leadCategory || c.leadCategory === 'Unassigned' || c.leadCategory === '');
+    } else {
+      results = results.filter(c => c.leadCategory === category);
+    }
   }
   if (status && status !== 'All') {
     results = results.filter(c => c.leadStatus === status);

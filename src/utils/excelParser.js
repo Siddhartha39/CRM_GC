@@ -426,13 +426,13 @@ export function analyzeImportRows({ rows = [], columnMapping = {}, existingPhone
       }
     }
 
-    // 7. Validate Category (Hot, Warm, Cold)
-    let cleanCategory = 'Cold';
+    // 7. Validate Category (Hot, Warm, Cold - unassigned if not specified)
+    let cleanCategory = '';
     if (rawCategory) {
       const catLower = rawCategory.toLowerCase();
       if (catLower.includes('hot')) cleanCategory = 'Hot';
       else if (catLower.includes('warm')) cleanCategory = 'Warm';
-      else cleanCategory = 'Cold';
+      else if (catLower.includes('cold')) cleanCategory = 'Cold';
     }
 
     // 8. Validate Status

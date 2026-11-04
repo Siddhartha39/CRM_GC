@@ -9,7 +9,7 @@ export async function getDashboardMetrics() {
   try {
     const [customers, todayFollowUpsList, overdueFollowUpsList, completedFollowUpsList, recentCalls] =
       await Promise.all([
-        getCustomers({ limitCount: 500 }),
+        getCustomers(),
         getTodayFollowUps(),
         getOverdueFollowUps(),
         getCompletedFollowUps(),
@@ -20,12 +20,14 @@ export async function getDashboardMetrics() {
     let hotLeads = 0;
     let warmLeads = 0;
     let coldLeads = 0;
+    let unassignedLeads = 0;
     let convertedLeads = 0;
 
     customers.forEach(c => {
       if (c.leadCategory === 'Hot') hotLeads++;
       else if (c.leadCategory === 'Warm') warmLeads++;
       else if (c.leadCategory === 'Cold') coldLeads++;
+      else unassignedLeads++;
 
       if (c.leadStatus === 'Converted') convertedLeads++;
     });
@@ -47,6 +49,7 @@ export async function getDashboardMetrics() {
       { name: 'Hot Leads', count: hotLeads, fill: '#ff4d4d' },
       { name: 'Warm Leads', count: warmLeads, fill: '#a66a00' },
       { name: 'Cold Leads', count: coldLeads, fill: '#2d5da1' },
+      ...(unassignedLeads > 0 ? [{ name: 'Unassigned', count: unassignedLeads, fill: '#94a3b8' }] : []),
     ];
 
     const recentCustomers = [...customers]

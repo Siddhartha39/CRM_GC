@@ -5,7 +5,19 @@ import React from 'react';
  * Molded tactile pills with smooth inset or flat shadow depth and no harsh borders.
  */
 export function LeadCategoryBadge({ category, size = 'md' }) {
-  const normCategory = category || 'Cold';
+  const sizeClass = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-xs sm:text-sm';
+
+  if (!category || category === 'Unassigned' || category === 'None' || category === '') {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 font-display font-medium rounded-full bg-background shadow-neu-pressed-sm text-muted/70 ${sizeClass}`}
+        title="Category not assigned yet"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-muted/40" />
+        <span>Unassigned</span>
+      </span>
+    );
+  }
 
   const categoryConfig = {
     Hot: {
@@ -25,8 +37,11 @@ export function LeadCategoryBadge({ category, size = 'md' }) {
     },
   };
 
-  const config = categoryConfig[normCategory] || categoryConfig.Cold;
-  const sizeClass = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-xs sm:text-sm';
+  const config = categoryConfig[category] || {
+    dot: 'bg-muted/40',
+    text: 'text-muted',
+    label: category,
+  };
 
   return (
     <span

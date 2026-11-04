@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
-import { collection, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { toast } from 'sonner';
 import {
@@ -32,6 +32,61 @@ export function SettingsPage() {
   const [usersList, setUsersList] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [processingUid, setProcessingUid] = useState(null);
+  const [cleaningLeads, setCleaningLeads] = useState(false);
+
+  const handleCleanDefaultColdLeads = async () => {
+    if (!isAdmin) return;
+    if (!window.confirm('Reset all leads that were automatically defaulted to Cold (and never called) back to Unassigned?')) {
+      return;
+    }
+
+    setCleaningLeads(true);
+    try {
+      const [custSnap, callSnap] = await Promise.all([
+        getDocs(collection(db, 'customers')),
+        getDocs(collection(db, 'callLogs')),
+      ]);
+
+      const calledCustIds = new Set();
+      callSnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.customerId) calledCustIds.add(data.customerId);
+      });
+
+      const uncalledColdDocs = [];
+      custSnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.leadCategory === 'Cold' && !calledCustIds.has(d.id)) {
+          uncalledColdDocs.push(d);
+        }
+      });
+
+      if (uncalledColdDocs.length === 0) {
+        toast.info('No auto-defaulted cold leads found.');
+        return;
+      }
+
+      let updatedCount = 0;
+      for (let i = 0; i < uncalledColdDocs.length; i += 200) {
+        const chunk = uncalledColdDocs.slice(i, i + 200);
+        const batch = writeBatch(db);
+        chunk.forEach(d => {
+          batch.update(d.ref, {
+            leadCategory: '',
+            updatedAt: serverTimestamp(),
+          });
+        });
+        await batch.commit();
+        updatedCount += chunk.length;
+      }
+
+      toast.success();
+    } catch (err) {
+      toast.error('Failed to clean defaulted leads: ' + err.message);
+    } finally {
+      setCleaningLeads(false);
+    }
+  };
 
   const fetchUsers = async () => {
     if (!isAdmin) return;
@@ -242,6 +297,17 @@ export function SettingsPage() {
             >
               Bulk Import / Export CSV Leads
             </Button>
+            {isAdmin && (
+              <Button
+                variant="muted"
+                icon={RefreshCw}
+                onClick={handleCleanDefaultColdLeads}
+                disabled={cleaningLeads}
+                className="w-full justify-center text-xs mt-1"
+              >
+                {cleaningLeads ? 'Cleaning Defaulted Leads...' : 'Reset Auto-Defaulted Cold Leads to Unassigned'}
+              </Button>
+            )}
           </div>
         </Card>
 

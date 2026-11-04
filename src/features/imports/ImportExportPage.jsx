@@ -311,7 +311,7 @@ export function ImportExportPage() {
         ProductInterest: c.interest || c.requirement || '',
         Requirement: c.requirement || '',
         BudgetINR: c.budget || '',
-        LeadCategory: c.leadCategory || 'Cold',
+        LeadCategory: c.leadCategory || '',
         LeadStatus: c.leadStatus || 'New',
         LastCallDate: c.lastCallAt ? formatKolkataDateTime(c.lastCallAt) : '',
         NextFollowUpDate: c.nextFollowUpDate || '',
